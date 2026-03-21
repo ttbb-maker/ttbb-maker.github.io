@@ -459,12 +459,20 @@
   <div class="field">
     <label>Zweck / Anlass</label>
     <div class="tags" id="tagContainer">
-      <div class="tag active" onclick="selectTag(this)">Immobilien</div>
-      <div class="tag" onclick="selectTag(this)">VillageVending</div>
+      <div class="tag active" onclick="selectTag(this)">VillageVending</div>
+      <div class="tag" onclick="selectTag(this)">Immobilien</div>
       <div class="tag" onclick="selectTag(this)">Jemako</div>
       <div class="tag" onclick="selectTag(this)">Sonstiges</div>
     </div>
     <input type="text" id="zweckCustom" placeholder="Oder eigenen Anlass eingeben …" style="margin-top:8px;">
+  </div>
+
+  <div class="field">
+    <label>Hin & Zurück?</label>
+    <div class="tags">
+      <div class="tag" id="tagHin" onclick="toggleRetour(false)">Nur Hinfahrt</div>
+      <div class="tag active" id="tagRetour" onclick="toggleRetour(true)">Hin & Zurück (×2)</div>
+    </div>
   </div>
 
   <button class="btn-add" onclick="addFahrt()">+ Fahrt hinzufügen</button>
@@ -566,7 +574,8 @@
       if (data.code === 'Ok') {
         const km = (data.routes[0].distance / 1000).toFixed(1);
         document.getElementById('km').value = km;
-        hint.textContent = `✓ Route gefunden: ${parseFloat(km).toLocaleString('de-DE')} km (Straße)`;
+        const gesamt = isRetour ? (parseFloat(km) * 2).toLocaleString('de-DE') : parseFloat(km).toLocaleString('de-DE');
+        hint.textContent = `✓ Route: ${parseFloat(km).toLocaleString('de-DE')} km · ${isRetour ? 'Hin & Zurück: ' + gesamt + ' km' : 'Nur Hinfahrt'}`;
         hint.style.color = 'var(--accent)';
       } else {
         hint.textContent = '⚠️ Route nicht gefunden – km manuell eingeben';
@@ -581,7 +590,20 @@
   }
 
   // ── Rest der App ────────────────────────────────────────────
-  function selectTag(el) {
+  let isRetour = true;
+
+  function toggleRetour(val) {
+    isRetour = val;
+    document.getElementById('tagHin').classList.toggle('active', !val);
+    document.getElementById('tagRetour').classList.toggle('active', val);
+    // km-Feld Hinweis aktualisieren
+    const kmVal = parseFloat(document.getElementById('km').value);
+    if (kmVal) {
+      document.getElementById('kmHint').textContent = isRetour
+        ? `✓ Hin & Zurück: ${(kmVal * 2).toLocaleString('de-DE')} km gesamt`
+        : `✓ Nur Hinfahrt: ${kmVal.toLocaleString('de-DE')} km`;
+    }
+  }
     document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('zweckCustom').value = '';
@@ -597,7 +619,8 @@
   function addFahrt() {
     const von = document.getElementById('von').value.trim();
     const nach = document.getElementById('nach').value.trim();
-    const km = parseFloat(document.getElementById('km').value);
+    const kmEinfach = parseFloat(document.getElementById('km').value);
+    const km = isRetour ? parseFloat((kmEinfach * 2).toFixed(1)) : kmEinfach;
     const datum = document.getElementById('datum').value;
     const zweck = getZweck();
 
@@ -618,6 +641,9 @@
     document.getElementById('kmHint').textContent = '';
     document.getElementById('datum').value = new Date().toISOString().split('T')[0];
     document.querySelectorAll('.tag').forEach((t, i) => t.classList.toggle('active', i === 0));
+    isRetour = true;
+    document.getElementById('tagHin').classList.remove('active');
+    document.getElementById('tagRetour').classList.add('active');
     coords = { von: null, nach: null };
     updateCalcBtn();
   }
