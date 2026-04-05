@@ -37,6 +37,9 @@
   .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em; }
   .btn-export { background:transparent;border:1px solid var(--accent2);color:var(--accent2);border-radius:8px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer; }
   .btn-export:disabled { opacity:.3;cursor:not-allowed; }
+  .data-bar { display:flex;gap:8px;padding:12px 20px 0;justify-content:flex-end; }
+  .btn-data { background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:11px;cursor:pointer; }
+  .btn-data:hover { border-color:var(--accent);color:var(--accent); }
   .monat-select { background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;padding:7px 10px;outline:none;cursor:pointer;width:auto; }
   .monat-select:focus { border-color:var(--accent); }
   .fahrt-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
@@ -120,6 +123,11 @@
   <div class="list-title" id="listTitle">Meine Fahrten</div>
   <input type="month" id="monatSelect" class="monat-select" onchange="render()">
   <button class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>&#8595; Export</button>
+</div>
+
+<div class="data-bar">
+  <button class="btn-data" onclick="exportJSON()">&#8593; Daten sichern</button>
+  <label class="btn-data" style="cursor:pointer;">&#8595; Daten importieren<input type="file" accept=".json" onchange="importJSON(this)" style="display:none;"></label>
 </div>
 
 <div class="fahrt-list" id="fahrtList">
@@ -281,6 +289,35 @@ function exportCSV() {
   a.href=url; a.download='Fahrtenbuch_'+mn+'_'+j+'.csv';
   a.click(); URL.revokeObjectURL(url);
   showToast(mn+' '+j+' wird heruntergeladen');
+}
+
+function exportJSON() {
+  var blob=new Blob([JSON.stringify(fahrten,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='Fahrtenbuch_Backup.json';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Backup gespeichert!');
+}
+
+function importJSON(input) {
+  var file=input.files[0];
+  if (!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try {
+      var data=JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error();
+      var neu=0;
+      var ids=new Set(fahrten.map(function(f){return f.id;}));
+      data.forEach(function(f){if(!ids.has(f.id)){fahrten.push(f);neu++;}});
+      fahrten.sort(function(a,b){return new Date(b.datum)-new Date(a.datum);});
+      save(); render();
+      showToast(neu+' neue Fahrten importiert!');
+    } catch(e) { showToast('Ungueltige Datei!'); }
+  };
+  reader.readAsText(file);
+  input.value='';
 }
 
 function showToast(msg) {
