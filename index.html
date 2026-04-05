@@ -37,6 +37,8 @@
   .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em; }
   .btn-export { background:transparent;border:1px solid var(--accent2);color:var(--accent2);border-radius:8px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer; }
   .btn-export:disabled { opacity:.3;cursor:not-allowed; }
+  .monat-select { background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;padding:7px 10px;outline:none;cursor:pointer;width:auto; }
+  .monat-select:focus { border-color:var(--accent); }
   .fahrt-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
   .fahrt-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative; }
   .fahrt-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px; }
@@ -116,6 +118,7 @@
 
 <div class="list-header">
   <div class="list-title" id="listTitle">Meine Fahrten</div>
+  <input type="month" id="monatSelect" class="monat-select" onchange="render()">
   <button class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>&#8595; Export</button>
 </div>
 
@@ -130,6 +133,8 @@ var fahrten = JSON.parse(localStorage.getItem('fahrten') || '[]');
 var isRetour = true;
 
 document.getElementById('datum').value = new Date().toISOString().split('T')[0];
+var _now0 = new Date();
+document.getElementById('monatSelect').value = _now0.getFullYear() + '-' + String(_now0.getMonth()+1).padStart(2,'0');
 
 async function berechneKm() {
   var von = document.getElementById('von').value.trim();
@@ -230,9 +235,11 @@ function deleteFahrt(id) {
 function save() { localStorage.setItem('fahrten',JSON.stringify(fahrten)); }
 
 function render() {
-  var now=new Date();
-  var m=now.getMonth(), j=now.getFullYear();
-  var mn=now.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+  var msv=document.getElementById('monatSelect').value;
+  var parts=msv.split('-');
+  var j=parseInt(parts[0]),m=parseInt(parts[1])-1;
+  var sel=new Date(j,m,1);
+  var mn=sel.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
   var dm=fahrten.filter(function(f){var d=new Date(f.datum);return d.getMonth()===m&&d.getFullYear()===j;});
   var list=document.getElementById('fahrtList');
   var tkm=dm.reduce(function(s,f){return s+f.km;},0);
@@ -244,8 +251,8 @@ function render() {
   document.getElementById('headerMeta').textContent=dm.length+' Fahrten - '+tkm.toLocaleString('de-DE')+' km gesamt';
   document.getElementById('listTitle').textContent=mn;
   document.getElementById('exportBtn').disabled=dm.length===0;
-  document.getElementById('exportBtn').textContent=now.toLocaleDateString('de-DE',{month:'short'})+' CSV';
-  if (!dm.length) { list.innerHTML='<div class="empty-state"><div class="empty-icon">&#128663;</div>Noch keine Fahrten im '+now.toLocaleDateString('de-DE',{month:'long'})+'</div>'; return; }
+  document.getElementById('exportBtn').textContent=sel.toLocaleDateString('de-DE',{month:'short'})+' CSV';
+  if (!dm.length) { list.innerHTML='<div class="empty-state"><div class="empty-icon">&#128663;</div>Noch keine Fahrten im '+sel.toLocaleDateString('de-DE',{month:'long'})+'</div>'; return; }
   list.innerHTML=dm.map(function(f){
     var d=new Date(f.datum);
     var ds=d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -255,11 +262,13 @@ function render() {
 }
 
 function exportCSV() {
-  var now=new Date();
-  var m=now.getMonth(),j=now.getFullYear();
+  var msv=document.getElementById('monatSelect').value;
+  var parts=msv.split('-');
+  var j=parseInt(parts[0]),m=parseInt(parts[1])-1;
+  var sel=new Date(j,m,1);
   var dm=fahrten.filter(function(f){var d=new Date(f.datum);return d.getMonth()===m&&d.getFullYear()===j;});
   if (!dm.length) return;
-  var mn=now.toLocaleDateString('de-DE',{month:'long'});
+  var mn=sel.toLocaleDateString('de-DE',{month:'long'});
   var tkm=dm.reduce(function(s,f){return s+f.km;},0);
   var rows=['Datum;Von;Nach;Hin und Zurueck;Kilometer;Zweck;Km-Pauschale (0,30 EUR)'];
   dm.forEach(function(f){
