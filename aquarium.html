@@ -96,6 +96,24 @@
   .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
   .empty-icon  { font-size:40px;margin-bottom:12px;opacity:.4; }
 
+  /* Erinnerungs-Banner */
+  .reminder-banner { margin:16px 20px 0;background:linear-gradient(135deg,#0f1e35,#112240);border:1px solid var(--accent);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px; }
+  .reminder-icon { font-size:26px;flex-shrink:0; }
+  .reminder-text { flex:1;min-width:0; }
+  .reminder-text strong { display:block;font-size:13px;color:var(--accent);margin-bottom:2px; }
+  .reminder-text span   { font-size:11px;color:var(--muted); }
+  .btn-reminder { background:var(--accent);color:#0e0f11;border:none;border-radius:8px;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0; }
+  .btn-reminder:active { opacity:.8; }
+
+  /* Einstellungen */
+  .settings-section { margin:20px 20px 0; }
+  .settings-toggle { font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);user-select:none; }
+  .settings-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:12px; }
+  .settings-row { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px; }
+  .btn-save-settings { background:var(--accent);color:#0e0f11;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer; }
+  .btn-notif { width:100%;margin-top:10px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:10px;font-family:inherit;font-size:12px;cursor:pointer; }
+  .notif-status { font-size:11px;color:var(--muted);margin-top:6px; }
+
   /* Toast */
   .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
   .toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
@@ -107,6 +125,15 @@
   <div class="header-label">Aquarium</div>
   <h1 id="aquariumName">Mein Aquarium</h1>
   <div class="header-meta" id="headerMeta">Noch keine Messungen</div>
+</div>
+
+<div class="reminder-banner" id="reminderBanner" style="display:none">
+  <div class="reminder-icon">💧</div>
+  <div class="reminder-text">
+    <strong id="reminderTitle">Zeit für eine Messung!</strong>
+    <span id="reminderSub">Erinnerungsintervall erreicht</span>
+  </div>
+  <button class="btn-reminder" onclick="scrollToForm()">Jetzt messen</button>
 </div>
 
 <div class="stats">
@@ -199,6 +226,30 @@
 </div>
 
 <div class="mess-list" id="messList"></div>
+
+<div class="settings-section">
+  <div class="settings-toggle" onclick="toggleSettings()">
+    <span>Einstellungen</span>
+    <span id="settingsArrow">▼</span>
+  </div>
+  <div id="settingsPanel" style="display:none">
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="field">
+          <label>Aquarium Name</label>
+          <input type="text" id="sName" placeholder="Mein Aquarium">
+        </div>
+        <div class="field">
+          <label>Erinnerung alle (Tage)</label>
+          <input type="number" id="sErinnerung" placeholder="7" min="1" max="365">
+        </div>
+      </div>
+      <button class="btn-save-settings" onclick="saveSettings()">Speichern</button>
+      <button class="btn-notif" id="btnNotif" onclick="requestNotification()">Benachrichtigungen erlauben</button>
+      <div class="notif-status" id="notifStatus"></div>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -412,23 +463,29 @@ function setSyncDot(ok) {
 
 // --- UI ---
 
-function updateUI() {
-  const name = settings.aquarium_name || 'Mein Aquarium';
+function updateHeader() {
+  const name   = settings.aquarium_name || 'Mein Aquarium';
   document.getElementById('aquariumName').textContent = name;
   document.title = name + ' – Messwerte';
-
   const n      = messungen.length;
   const sorted = [...messungen].sort((a,b) => b.datum.localeCompare(a.datum));
   const last   = sorted[0];
-
   if (n === 0) {
     document.getElementById('headerMeta').textContent = 'Noch keine Messungen';
   } else {
-    const days  = daysSince(last.datum);
-    const dStr  = days === 0 ? 'Heute' : days === 1 ? 'Gestern' : `vor ${days} Tagen`;
+    const days = daysSince(last.datum);
+    const dStr = days === 0 ? 'Heute' : days === 1 ? 'Gestern' : `vor ${days} Tagen`;
     document.getElementById('headerMeta').textContent =
       `${n} Messung${n !== 1 ? 'en' : ''} · Letzte: ${dStr}`;
   }
+}
+
+function updateUI() {
+  updateHeader();
+
+  const sorted = [...messungen].sort((a,b) => b.datum.localeCompare(a.datum));
+  const last   = sorted[0];
+  const n      = messungen.length;
 
   // Stats
   document.getElementById('statMessungen').textContent = n;
@@ -455,6 +512,8 @@ function updateUI() {
 
   updateMonatSelect();
   renderList();
+  checkReminder();
+  updateSettingsForm();
 }
 
 // --- Formular ---
@@ -517,6 +576,106 @@ function saveMeasurement() {
 
   saveToBackend();
   updateUI();
+}
+
+// --- Erinnerung ---
+
+function checkReminder() {
+  const banner = document.getElementById('reminderBanner');
+  if (messungen.length === 0) { banner.style.display = 'none'; return; }
+
+  const sorted   = [...messungen].sort((a,b) => b.datum.localeCompare(a.datum));
+  const days     = daysSince(sorted[0].datum);
+  const interval = settings.erinnerung_tage || 7;
+
+  if (days >= interval) {
+    document.getElementById('reminderTitle').textContent =
+      days === 0 ? 'Heute messen!' : `${days} Tag${days !== 1 ? 'e' : ''} seit der letzten Messung`;
+    document.getElementById('reminderSub').textContent =
+      `Erinnerungsintervall: alle ${interval} Tage`;
+    banner.style.display = 'flex';
+
+    // Browser-Benachrichtigung – max. einmal pro Tag
+    const today    = new Date().toDateString();
+    const lastSent = localStorage.getItem('aq_last_notif');
+    if (lastSent !== today && Notification.permission === 'granted') {
+      new Notification('Aquarium-Messung fällig!', {
+        body: `${days} Tag${days !== 1 ? 'e' : ''} seit der letzten Messung – jetzt messen!`,
+        tag:  'aq-reminder'
+      });
+      localStorage.setItem('aq_last_notif', today);
+    }
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function scrollToForm() {
+  document.getElementById('formCard').scrollIntoView({behavior:'smooth'});
+}
+
+// --- Einstellungen ---
+
+let settingsOpen = false;
+
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settingsPanel').style.display = settingsOpen ? 'block' : 'none';
+  document.getElementById('settingsArrow').textContent   = settingsOpen ? '▲' : '▼';
+}
+
+function updateSettingsForm() {
+  document.getElementById('sName').value       = settings.aquarium_name  || '';
+  document.getElementById('sErinnerung').value = settings.erinnerung_tage || 7;
+  updateNotifStatus();
+}
+
+async function saveSettings() {
+  settings.aquarium_name   = document.getElementById('sName').value.trim() || 'Mein Aquarium';
+  settings.erinnerung_tage = parseInt(document.getElementById('sErinnerung').value) || 7;
+  try {
+    await fetch(API + '?action=settings', {
+      method:'POST',
+      headers:{ 'X-API-Key':KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify(settings)
+    });
+  } catch { /* ignorieren – lokal gespeichert */ }
+  updateHeader();
+  checkReminder();
+  showToast('Einstellungen gespeichert');
+}
+
+// --- Browser-Benachrichtigungen ---
+
+function updateNotifStatus() {
+  const btn    = document.getElementById('btnNotif');
+  const status = document.getElementById('notifStatus');
+  if (!('Notification' in window)) {
+    btn.style.display = 'none';
+    status.textContent = 'Benachrichtigungen werden von diesem Browser nicht unterstützt.';
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    btn.textContent    = 'Test-Benachrichtigung senden';
+    status.textContent = '✓ Benachrichtigungen sind aktiv';
+  } else if (Notification.permission === 'denied') {
+    btn.style.display  = 'none';
+    status.textContent = 'Benachrichtigungen blockiert – bitte in den Browser-Einstellungen aktivieren.';
+  } else {
+    btn.textContent    = 'Benachrichtigungen erlauben';
+    status.textContent = 'Erlaube Benachrichtigungen, um Erinnerungen zu erhalten.';
+  }
+}
+
+async function requestNotification() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    new Notification('Aquarium Messwerte', { body:'Benachrichtigungen funktionieren!', tag:'aq-test' });
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  updateNotifStatus();
+  if (perm === 'granted') showToast('Benachrichtigungen aktiviert!');
 }
 
 // --- Init ---
