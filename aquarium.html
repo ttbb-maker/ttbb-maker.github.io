@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aquarium Messwerte</title>
+<style>
+  :root {
+    --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;
+    --accent:#4facfe;--accent2:#00d4ff;
+    --text:#f0f0ed;--muted:#6b7080;
+    --danger:#f54747;--warn:#f5a547;--ok:#47f57a;
+    --radius:14px;
+  }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 100px 0; }
+
+  /* Header */
+  .header { padding:28px 20px 0; }
+  .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
+  .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
+  .header-meta { font-size:11px;color:var(--muted);margin-top:6px; }
+
+  /* Stats */
+  .stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:20px 20px 0; }
+  .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center; }
+  .stat-value { font-size:20px;font-weight:700;color:var(--accent);line-height:1; }
+  .stat-value.ok   { color:var(--ok); }
+  .stat-value.warn { color:var(--warn); }
+  .stat-value.danger { color:var(--danger); }
+  .stat-label { font-size:9px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.1em; }
+
+  /* Formular */
+  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .3s; }
+  .form-card.edit-mode { border-color:var(--accent2); }
+  .form-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+  .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
+  .form-card.edit-mode .form-title { color:var(--accent2); }
+  .form-card.edit-mode .form-title::before { background:var(--accent2); }
+
+  .field-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .field { margin-bottom:10px; }
+  label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:5px; }
+  input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none; }
+  input:focus { border-color:var(--accent); }
+  input::placeholder { color:var(--muted); }
+
+  .more-divider { display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 0;color:var(--muted);font-size:12px;margin:2px 0;user-select:none; }
+  .more-divider::before,.more-divider::after { content:'';flex:1;height:1px;background:var(--border); }
+  .more-fields { display:none; }
+  .more-fields.open { display:block; }
+
+  .btn-add { width:100%;margin-top:14px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer; }
+  .btn-add:active { opacity:.8; }
+  .btn-cancel { width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;cursor:pointer; }
+
+  /* Toast */
+  .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
+  .toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Aquarium</div>
+  <h1 id="aquariumName">Mein Aquarium</h1>
+  <div class="header-meta" id="headerMeta">Noch keine Messungen</div>
+</div>
+
+<div class="stats">
+  <div class="stat-box">
+    <div class="stat-value" id="statMessungen">0</div>
+    <div class="stat-label">Messungen</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value" id="statPh">—</div>
+    <div class="stat-label">pH (zuletzt)</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value" id="statTemp">—</div>
+    <div class="stat-label">Temp °C</div>
+  </div>
+</div>
+
+<div class="form-card" id="formCard">
+  <div class="form-title" id="formTitle">Messung eintragen</div>
+
+  <div class="field">
+    <label>Datum</label>
+    <input type="date" id="fDatum">
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label>pH-Wert</label>
+      <input type="number" id="fPh" placeholder="z.B. 7.2" step="0.1" min="0" max="14">
+    </div>
+    <div class="field">
+      <label>Temperatur (°C)</label>
+      <input type="number" id="fTemp" placeholder="z.B. 26" step="0.1" min="0" max="40">
+    </div>
+  </div>
+
+  <div class="more-divider" onclick="toggleMore()">
+    <span id="moreLabel">+ Weitere Werte</span>
+  </div>
+
+  <div class="more-fields" id="moreFields">
+    <div class="field-row">
+      <div class="field">
+        <label>NO₂ Nitrit (mg/L)</label>
+        <input type="number" id="fNo2" placeholder="z.B. 0" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>NO₃ Nitrat (mg/L)</label>
+        <input type="number" id="fNo3" placeholder="z.B. 10" step="1" min="0">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>NH₄ Ammonium (mg/L)</label>
+        <input type="number" id="fNh4" placeholder="z.B. 0" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>KH Karbonathärte (°dH)</label>
+        <input type="number" id="fKh" placeholder="z.B. 8" step="0.5" min="0">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>GH Gesamthärte (°dH)</label>
+        <input type="number" id="fGh" placeholder="z.B. 12" step="0.5" min="0">
+      </div>
+      <div class="field">
+        <label>PO₄ Phosphat (mg/L)</label>
+        <input type="number" id="fPo4" placeholder="z.B. 0.5" step="0.1" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Notiz</label>
+    <input type="text" id="fNotiz" placeholder="Optionale Bemerkung...">
+  </div>
+
+  <button class="btn-add" id="btnAdd" onclick="saveMeasurement()">Messung speichern</button>
+  <button class="btn-cancel" id="btnCancel" onclick="cancelEdit()" style="display:none">Abbrechen</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://tonibader.synology.me/aquarium-api.php';
+const KEY = 'aq_m7nK3pRx5wYz';
+
+const RANGES = {
+  ph:   { ok:[6.5,7.5],  warn:[6.0,8.0],  unit:'',     name:'pH'   },
+  temp: { ok:[24,28],    warn:[20,30],     unit:'°C',   name:'Temp' },
+  no2:  { ok:[0,0.1],    warn:[0,0.5],     unit:'mg/L', name:'NO₂'  },
+  no3:  { ok:[0,25],     warn:[0,50],      unit:'mg/L', name:'NO₃'  },
+  nh4:  { ok:[0,0.1],    warn:[0,0.5],     unit:'mg/L', name:'NH₄'  },
+  kh:   { ok:[5,10],     warn:[3,15],      unit:'°dH',  name:'KH'   },
+  gh:   { ok:[8,15],     warn:[5,20],      unit:'°dH',  name:'GH'   },
+  po4:  { ok:[0,1.0],    warn:[0,2.0],     unit:'mg/L', name:'PO₄'  }
+};
+
+let messungen = [];
+let settings  = { erinnerung_tage:7, aquarium_name:'Mein Aquarium' };
+let editId    = null;
+let moreOpen  = false;
+
+// --- Hilfsfunktionen ---
+
+function getStatus(key, value) {
+  if (value === null || value === undefined) return 'none';
+  const r = RANGES[key];
+  if (!r) return 'none';
+  const v = parseFloat(value);
+  if (isNaN(v)) return 'none';
+  if (v >= r.ok[0]   && v <= r.ok[1])   return 'ok';
+  if (v >= r.warn[0] && v <= r.warn[1]) return 'warn';
+  return 'danger';
+}
+
+function daysSince(dateStr) {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d   = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.floor((now - d) / 86400000);
+}
+
+let toastTimer;
+function showToast(msg, err = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? 'var(--danger)' : 'var(--accent)';
+  t.style.color = err ? 'white' : '#0e0f11';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// --- Laden & Speichern ---
+
+async function loadData() {
+  try {
+    const r = await fetch(API, { headers:{ 'X-API-Key':KEY } });
+    if (!r.ok) throw new Error();
+    const d  = await r.json();
+    messungen = d.messungen || [];
+    settings  = Object.assign({ erinnerung_tage:7, aquarium_name:'Mein Aquarium' }, d.settings);
+    localStorage.setItem('aq_messungen', JSON.stringify(messungen));
+  } catch {
+    showToast('Verbindungsfehler – lokale Daten', true);
+    const local = localStorage.getItem('aq_messungen');
+    if (local) messungen = JSON.parse(local);
+  }
+  updateUI();
+}
+
+async function saveToBackend() {
+  try {
+    const r = await fetch(API, {
+      method:'POST',
+      headers:{ 'X-API-Key':KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify(messungen)
+    });
+    if (!r.ok) throw new Error();
+    localStorage.setItem('aq_messungen', JSON.stringify(messungen));
+  } catch {
+    showToast('Speichern fehlgeschlagen', true);
+  }
+}
+
+// --- UI ---
+
+function updateUI() {
+  const name = settings.aquarium_name || 'Mein Aquarium';
+  document.getElementById('aquariumName').textContent = name;
+  document.title = name + ' – Messwerte';
+
+  const n      = messungen.length;
+  const sorted = [...messungen].sort((a,b) => b.datum.localeCompare(a.datum));
+  const last   = sorted[0];
+
+  if (n === 0) {
+    document.getElementById('headerMeta').textContent = 'Noch keine Messungen';
+  } else {
+    const days  = daysSince(last.datum);
+    const dStr  = days === 0 ? 'Heute' : days === 1 ? 'Gestern' : `vor ${days} Tagen`;
+    document.getElementById('headerMeta').textContent =
+      `${n} Messung${n !== 1 ? 'en' : ''} · Letzte: ${dStr}`;
+  }
+
+  // Stats
+  document.getElementById('statMessungen').textContent = n;
+  document.getElementById('statMessungen').className   = 'stat-value';
+
+  const phEl   = document.getElementById('statPh');
+  const tempEl = document.getElementById('statTemp');
+
+  if (last && last.ph != null) {
+    phEl.textContent = last.ph;
+    phEl.className   = 'stat-value ' + getStatus('ph', last.ph);
+  } else {
+    phEl.textContent = '—';
+    phEl.className   = 'stat-value';
+  }
+
+  if (last && last.temp != null) {
+    tempEl.textContent = last.temp + '°';
+    tempEl.className   = 'stat-value ' + getStatus('temp', last.temp);
+  } else {
+    tempEl.textContent = '—';
+    tempEl.className   = 'stat-value';
+  }
+}
+
+// --- Formular ---
+
+function toggleMore() {
+  moreOpen = !moreOpen;
+  document.getElementById('moreFields').className = 'more-fields' + (moreOpen ? ' open' : '');
+  document.getElementById('moreLabel').textContent = moreOpen ? '− Weniger Werte' : '+ Weitere Werte';
+}
+
+function getF(id) {
+  const v = document.getElementById(id).value;
+  return v === '' ? null : parseFloat(v);
+}
+
+function resetForm() {
+  ['fPh','fTemp','fNo2','fNo3','fNh4','fKh','fGh','fPo4','fNotiz'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fDatum').value = new Date().toISOString().slice(0,10);
+}
+
+function cancelEdit() {
+  editId = null;
+  resetForm();
+  document.getElementById('formCard').classList.remove('edit-mode');
+  document.getElementById('formTitle').textContent  = 'Messung eintragen';
+  document.getElementById('btnAdd').textContent     = 'Messung speichern';
+  document.getElementById('btnCancel').style.display = 'none';
+}
+
+function saveMeasurement() {
+  const datum = document.getElementById('fDatum').value;
+  if (!datum) { showToast('Datum fehlt!', true); return; }
+
+  const entry = {
+    id:    editId || Date.now().toString(),
+    datum,
+    ph:    getF('fPh'),
+    temp:  getF('fTemp'),
+    no2:   getF('fNo2'),
+    no3:   getF('fNo3'),
+    nh4:   getF('fNh4'),
+    kh:    getF('fKh'),
+    gh:    getF('fGh'),
+    po4:   getF('fPo4'),
+    notiz: document.getElementById('fNotiz').value.trim() || null
+  };
+
+  if (editId) {
+    const idx = messungen.findIndex(m => m.id === editId);
+    if (idx !== -1) messungen[idx] = entry;
+    showToast('Messung aktualisiert');
+    cancelEdit();
+  } else {
+    messungen.push(entry);
+    showToast('Messung gespeichert');
+    resetForm();
+  }
+
+  saveToBackend();
+  updateUI();
+}
+
+// --- Init ---
+document.getElementById('fDatum').value = new Date().toISOString().slice(0,10);
+loadData();
+</script>
+</body>
+</html>
