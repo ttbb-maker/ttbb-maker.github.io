@@ -44,6 +44,8 @@
   .sync-dot.err { background:var(--danger); }
   .btn-export { background:transparent;border:1px solid var(--accent2);color:var(--accent2);border-radius:8px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap; }
   .btn-export:disabled { opacity:.3;cursor:not-allowed; }
+  .btn-bericht { background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap; }
+  .btn-bericht:disabled { opacity:.3;cursor:not-allowed; }
   .data-bar { display:flex;gap:8px;padding:12px 20px 0;justify-content:flex-end; }
   .btn-data { background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:11px;cursor:pointer; }
   .btn-data:hover { border-color:var(--accent);color:var(--accent); }
@@ -151,6 +153,7 @@
   <div class="sync-dot" id="syncDot" title="Sync-Status"></div>
   <input type="month" id="monatSelect" class="monat-select" onchange="render()">
   <button class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>&#8595; CSV</button>
+  <button class="btn-bericht" id="berichtBtn" onclick="exportBericht()" disabled>&#128438; Bericht</button>
 </div>
 
 <div class="data-bar">
@@ -380,6 +383,7 @@ function render() {
   document.getElementById('listTitle').textContent = mn;
   document.getElementById('exportBtn').disabled = dm.length===0;
   document.getElementById('exportBtn').textContent = sel.toLocaleDateString('de-DE',{month:'short'})+' CSV';
+  document.getElementById('berichtBtn').disabled = dm.length===0;
   if (!dm.length) { list.innerHTML='<div class="empty-state"><div class="empty-icon">&#128663;</div>Noch keine Fahrten im '+sel.toLocaleDateString('de-DE',{month:'long'})+'</div>'; }
   else list.innerHTML = dm.map(function(f){
     var d = new Date(f.datum);
@@ -440,6 +444,35 @@ function exportCSV() {
   a.href=url; a.download='Fahrtenbuch_'+mn+'_'+j+'.csv';
   a.click(); URL.revokeObjectURL(url);
   showToast(mn+' '+j+' wird heruntergeladen');
+}
+
+async function exportBericht() {
+  var msv = document.getElementById('monatSelect').value;
+  var parts = msv.split('-');
+  var j = parseInt(parts[0]), m = parseInt(parts[1])-1;
+  var sel = new Date(j,m,1);
+  var dm = fahrten.filter(function(f){var d=new Date(f.datum);return d.getMonth()===m&&d.getFullYear()===j;});
+  if (!dm.length) return;
+  var mn = sel.toLocaleDateString('de-DE',{month:'long'});
+  var btn = document.getElementById('berichtBtn');
+  btn.disabled = true; btn.textContent = '... wird erstellt';
+  try {
+    var r = await fetch(API_URL+'?action=bericht', {
+      method:'POST',
+      headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({fahrten:dm, monat:mn, jahr:j})
+    });
+    var data = await r.json();
+    if (data.ok) {
+      showToast('Bericht gespeichert!');
+      window.open(data.url, '_blank');
+    } else {
+      showToast('Fehler: ' + (data.error || 'Unbekannt'));
+    }
+  } catch(e) {
+    showToast('Verbindungsfehler – Bericht nicht gespeichert');
+  }
+  btn.disabled = false; btn.textContent = '\uD83D\uDCC8 Bericht';
 }
 
 function exportJSON() {
