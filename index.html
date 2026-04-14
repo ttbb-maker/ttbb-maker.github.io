@@ -137,12 +137,26 @@
 <div class="toast" id="toast"></div>
 
 <script>
-var fahrten = JSON.parse(localStorage.getItem('fahrten') || '[]');
+var API_URL = 'http://tonibader.synology.me/api.php';
+var API_KEY = 'fb_k7mP9xQr2nLw';
+
+var fahrten = [];
 var isRetour = true;
 
 document.getElementById('datum').value = new Date().toISOString().split('T')[0];
 var _now0 = new Date();
 document.getElementById('monatSelect').value = _now0.getFullYear() + '-' + String(_now0.getMonth()+1).padStart(2,'0');
+
+async function loadFahrten() {
+  try {
+    var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}});
+    if (r.ok) { fahrten = await r.json(); }
+  } catch(e) {
+    fahrten = JSON.parse(localStorage.getItem('fahrten') || '[]');
+    showToast('Offline – lokale Daten geladen');
+  }
+  render();
+}
 
 async function berechneKm() {
   var von = document.getElementById('von').value.trim();
@@ -240,7 +254,12 @@ function deleteFahrt(id) {
   save(); render();
 }
 
-function save() { localStorage.setItem('fahrten',JSON.stringify(fahrten)); }
+async function save() {
+  localStorage.setItem('fahrten',JSON.stringify(fahrten));
+  try {
+    await fetch(API_URL, {method:'POST',headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'},body:JSON.stringify(fahrten)});
+  } catch(e) { showToast('Offline – nur lokal gespeichert'); }
+}
 
 function render() {
   var msv=document.getElementById('monatSelect').value;
@@ -326,7 +345,7 @@ function showToast(msg) {
   setTimeout(function(){t.classList.remove('show');},2500);
 }
 
-render();
+loadFahrten();
 </script>
 </body>
 </html>
