@@ -42,7 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['error' => 'Invalid JSON']);
         exit;
     }
-    file_put_contents(DATA_FILE, json_encode($data));
+    $result = file_put_contents(DATA_FILE, json_encode($data));
+    if ($result === false) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Datei konnte nicht gespeichert werden']);
+        exit;
+    }
     echo json_encode(['ok' => true]);
     exit;
 }
