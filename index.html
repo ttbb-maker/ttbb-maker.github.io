@@ -148,11 +148,18 @@ var _now0 = new Date();
 document.getElementById('monatSelect').value = _now0.getFullYear() + '-' + String(_now0.getMonth()+1).padStart(2,'0');
 
 async function loadFahrten() {
+  var local = JSON.parse(localStorage.getItem('fahrten') || '[]');
   try {
     var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}});
-    if (r.ok) { fahrten = await r.json(); }
+    if (r.ok) {
+      var remote = await r.json();
+      // Nur übernehmen wenn API Daten hat, sonst lokale behalten
+      fahrten = remote.length > 0 ? remote : local;
+    } else {
+      fahrten = local;
+    }
   } catch(e) {
-    fahrten = JSON.parse(localStorage.getItem('fahrten') || '[]');
+    fahrten = local;
     showToast('Offline – lokale Daten geladen');
   }
   render();
@@ -257,8 +264,9 @@ function deleteFahrt(id) {
 async function save() {
   localStorage.setItem('fahrten',JSON.stringify(fahrten));
   try {
-    await fetch(API_URL, {method:'POST',headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'},body:JSON.stringify(fahrten)});
-  } catch(e) { showToast('Offline – nur lokal gespeichert'); }
+    var r = await fetch(API_URL, {method:'POST',headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'},body:JSON.stringify(fahrten)});
+    return r.ok;
+  } catch(e) { return false; }
 }
 
 function render() {
@@ -331,8 +339,10 @@ function importJSON(input) {
       var ids=new Set(fahrten.map(function(f){return f.id;}));
       data.forEach(function(f){if(!ids.has(f.id)){fahrten.push(f);neu++;}});
       fahrten.sort(function(a,b){return new Date(b.datum)-new Date(a.datum);});
-      save(); render();
-      showToast(neu+' neue Fahrten importiert!');
+      render();
+      save().then(function(ok){
+        showToast(ok ? neu+' Fahrten importiert & gespeichert!' : neu+' Fahrten importiert (nur lokal)');
+      });
     } catch(e) { showToast('Ungueltige Datei!'); }
   };
   reader.readAsText(file);
