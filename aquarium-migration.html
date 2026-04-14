@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aquarium – Datenimport</title>
+<style>
+  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#4facfe;--text:#f0f0ed;--muted:#6b7080;--ok:#47f57a;--danger:#f54747;--radius:14px; }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:28px 20px 60px; }
+  .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
+  h1 { font-size:26px;font-weight:800;margin-bottom:6px; }
+  .sub { font-size:12px;color:var(--muted);margin-bottom:24px; }
+  .card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px; }
+  .card-title { font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:12px; }
+  .row { display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border); }
+  .row:last-child { border-bottom:none; }
+  .row-label { font-size:13px;color:var(--muted); }
+  .row-value { font-size:14px;font-weight:700;color:var(--text); }
+  .row-date { font-size:11px;color:var(--muted);margin-left:8px; }
+  .btn { width:100%;padding:15px;border:none;border-radius:10px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px; }
+  .btn-import { background:var(--accent);color:#0e0f11; }
+  .btn-import:disabled { opacity:.5;cursor:not-allowed; }
+  .btn-link { background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:8px; }
+  .status { margin-top:16px;padding:14px;border-radius:10px;font-size:13px;font-weight:600;display:none; }
+  .status.ok  { background:#0d2a1a;border:1px solid var(--ok);color:var(--ok);display:block; }
+  .status.err { background:#2a0d0d;border:1px solid var(--danger);color:var(--danger);display:block; }
+  .warn-box { background:#1a1400;border:1px solid #f5a547;border-radius:10px;padding:12px 14px;font-size:12px;color:#f5a547;margin-bottom:16px;line-height:1.5; }
+</style>
+</head>
+<body>
+
+<div class="header-label">Aquarium</div>
+<h1>Datenimport</h1>
+<p class="sub">Letzte Messwerte aus ReefManager werden in die neue App übertragen.</p>
+
+<div class="warn-box">
+  Achtung: Beim Import werden bestehende Daten in der neuen App <strong>nicht überschrieben</strong> – die Einträge werden ergänzt.
+</div>
+
+<div class="card">
+  <div class="card-title">Eintrag 1 – 13.04.2026</div>
+  <div class="row"><span class="row-label">KH</span>          <span class="row-value">7.7 <small>°dKH</small></span></div>
+  <div class="row"><span class="row-label">NO₃</span>         <span class="row-value">0.0 <small>mg/L</small></span></div>
+  <div class="row"><span class="row-label">Calcium</span>     <span class="row-value">430 <small>mg/L</small></span></div>
+  <div class="row"><span class="row-label">Magnesium</span>   <span class="row-value">1350 <small>mg/L</small></span></div>
+  <div class="row"><span class="row-label">PO₄</span>         <span class="row-value">0.0 <small>mg/L</small></span></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Eintrag 2 – 07.03.2026</div>
+  <div class="row"><span class="row-label">Salinität</span>   <span class="row-value">35.2 <small>PSU</small></span></div>
+</div>
+
+<button class="btn btn-import" id="btnImport" onclick="doImport()">Jetzt importieren</button>
+<button class="btn btn-link" onclick="window.location.href='aquarium.html'">Zur App</button>
+
+<div class="status" id="status"></div>
+
+<script>
+const API = 'https://tonibader.synology.me/aquarium-api.php';
+const KEY = 'aq_m7nK3pRx5wYz';
+
+const IMPORT = [
+  {
+    id:    'rm-import-20260413',
+    datum: '2026-04-13',
+    ph:    null,
+    temp:  null,
+    no3:   0.0,
+    kh:    7.7,
+    gh:    null,
+    po4:   0.0,
+    ca:    430.0,
+    mg:    1350.0,
+    sal:   null,
+    notiz: 'Import aus ReefManager (RedSea425)'
+  },
+  {
+    id:    'rm-import-20260307',
+    datum: '2026-03-07',
+    ph:    null,
+    temp:  null,
+    no3:   null,
+    kh:    null,
+    gh:    null,
+    po4:   null,
+    ca:    null,
+    mg:    null,
+    sal:   35.2,
+    notiz: 'Import aus ReefManager (RedSea425) – Salinität'
+  }
+];
+
+async function doImport() {
+  const btn    = document.getElementById('btnImport');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  btn.textContent = 'Importiere…';
+  status.className = 'status';
+
+  try {
+    // Bestehende Daten laden
+    const r    = await fetch(API, { headers:{ 'X-API-Key': KEY } });
+    if (!r.ok) throw new Error('Verbindung zum Server fehlgeschlagen');
+    const d    = await r.json();
+    const existing = d.messungen || [];
+
+    // Nur Einträge hinzufügen, die noch nicht existieren (anhand ID)
+    const existingIds = new Set(existing.map(m => m.id));
+    const toAdd = IMPORT.filter(m => !existingIds.has(m.id));
+
+    if (toAdd.length === 0) {
+      status.className = 'status ok';
+      status.textContent = 'Die Daten wurden bereits importiert – keine Duplikate angelegt.';
+      btn.textContent = 'Import abgeschlossen';
+      return;
+    }
+
+    const merged = [...existing, ...toAdd];
+
+    // Speichern
+    const s = await fetch(API, {
+      method: 'POST',
+      headers:{ 'X-API-Key': KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(merged)
+    });
+    if (!s.ok) throw new Error('Speichern fehlgeschlagen');
+
+    status.className = 'status ok';
+    status.textContent = `✓ ${toAdd.length} Eintrag${toAdd.length !== 1 ? 'e' : ''} erfolgreich importiert!`;
+    btn.textContent = 'Import abgeschlossen';
+    setTimeout(() => window.location.href = 'aquarium.html', 2000);
+
+  } catch(e) {
+    status.className = 'status err';
+    status.textContent = '✕ Fehler: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = 'Erneut versuchen';
+  }
+}
+</script>
+</body>
+</html>
