@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daten übertragen</title>
+<style>
+  body { background:#0e0f11;color:#f0f0ed;font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:40px 20px;text-align:center; }
+  h1 { font-size:22px;margin-bottom:8px; }
+  p { color:#6b7080;font-size:14px;margin-bottom:30px; }
+  .btn { display:block;width:100%;background:#d4f547;color:#0e0f11;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px; }
+  .result { margin-top:20px;padding:16px;background:#1e2128;border-radius:12px;font-size:13px;line-height:1.6; }
+  .ok { color:#d4f547; }
+  .err { color:#f54747; }
+  .info { color:#6b7080; }
+</style>
+</head>
+<body>
+<h1>Daten übertragen</h1>
+<p>Überträgt deine gespeicherten Fahrten einmalig auf die Synology.</p>
+<button class="btn" onclick="migrate()">Jetzt übertragen</button>
+<div class="result" id="result" style="display:none"></div>
+
+<script>
+var API_URL = 'http://tonibader.synology.me/api.php';
+var API_KEY = 'fb_k7mP9xQr2nLw';
+
+async function migrate() {
+  var el = document.getElementById('result');
+  el.style.display = 'block';
+
+  var raw = localStorage.getItem('fahrten');
+  if (!raw) {
+    el.innerHTML = '<span class="err">Keine lokalen Daten gefunden.</span>';
+    return;
+  }
+
+  var fahrten = JSON.parse(raw);
+  if (!fahrten.length) {
+    el.innerHTML = '<span class="err">Keine Fahrten im localStorage.</span>';
+    return;
+  }
+
+  el.innerHTML = '<span class="info">Übertrage ' + fahrten.length + ' Fahrten ...</span>';
+
+  try {
+    // Bestehende Daten laden und zusammenführen
+    var existing = [];
+    try {
+      var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}});
+      if (r.ok) existing = await r.json();
+    } catch(e) {}
+
+    var ids = new Set(existing.map(function(f){return f.id;}));
+    var neu = fahrten.filter(function(f){return !ids.has(f.id);});
+    var merged = existing.concat(neu);
+    merged.sort(function(a,b){return new Date(b.datum)-new Date(a.datum);});
+
+    var save = await fetch(API_URL, {
+      method: 'POST',
+      headers: {'X-API-Key': API_KEY, 'Content-Type': 'application/json'},
+      body: JSON.stringify(merged)
+    });
+
+    if (save.ok) {
+      el.innerHTML = '<span class="ok">✓ ' + neu.length + ' neue Fahrten übertragen!</span><br><span class="info">Gesamt: ' + merged.length + ' Fahrten auf der Synology.</span>';
+    } else {
+      el.innerHTML = '<span class="err">Fehler beim Speichern (Status ' + save.status + ')</span>';
+    }
+  } catch(e) {
+    el.innerHTML = '<span class="err">Verbindungsfehler: ' + e.message + '</span>';
+  }
+}
+</script>
+</body>
+</html>
