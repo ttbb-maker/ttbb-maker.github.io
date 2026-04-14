@@ -177,18 +177,8 @@
   <div class="more-fields" id="moreFields">
     <div class="field-row">
       <div class="field">
-        <label>NO₂ Nitrit (mg/L)</label>
-        <input type="number" id="fNo2" placeholder="z.B. 0" step="0.01" min="0">
-      </div>
-      <div class="field">
         <label>NO₃ Nitrat (mg/L)</label>
         <input type="number" id="fNo3" placeholder="z.B. 10" step="1" min="0">
-      </div>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label>NH₄ Ammonium (mg/L)</label>
-        <input type="number" id="fNh4" placeholder="z.B. 0" step="0.01" min="0">
       </div>
       <div class="field">
         <label>KH Karbonathärte (°dH)</label>
@@ -260,9 +250,7 @@ const KEY = 'aq_m7nK3pRx5wYz';
 const RANGES = {
   ph:   { ok:[6.5,7.5],  warn:[6.0,8.0],  unit:'',     name:'pH'   },
   temp: { ok:[24,28],    warn:[20,30],     unit:'°C',   name:'Temp' },
-  no2:  { ok:[0,0.1],    warn:[0,0.5],     unit:'mg/L', name:'NO₂'  },
   no3:  { ok:[0,25],     warn:[0,50],      unit:'mg/L', name:'NO₃'  },
-  nh4:  { ok:[0,0.1],    warn:[0,0.5],     unit:'mg/L', name:'NH₄'  },
   kh:   { ok:[5,10],     warn:[3,15],      unit:'°dH',  name:'KH'   },
   gh:   { ok:[8,15],     warn:[5,20],      unit:'°dH',  name:'GH'   },
   po4:  { ok:[0,1.0],    warn:[0,2.0],     unit:'mg/L', name:'PO₄'  }
@@ -441,9 +429,7 @@ function startEdit(id) {
   document.getElementById('fDatum').value = m.datum  ?? '';
   document.getElementById('fPh').value    = m.ph     ?? '';
   document.getElementById('fTemp').value  = m.temp   ?? '';
-  document.getElementById('fNo2').value   = m.no2    ?? '';
   document.getElementById('fNo3').value   = m.no3    ?? '';
-  document.getElementById('fNh4').value   = m.nh4    ?? '';
   document.getElementById('fKh').value    = m.kh     ?? '';
   document.getElementById('fGh').value    = m.gh     ?? '';
   document.getElementById('fPo4').value   = m.po4    ?? '';
@@ -530,7 +516,7 @@ function getF(id) {
 }
 
 function resetForm() {
-  ['fPh','fTemp','fNo2','fNo3','fNh4','fKh','fGh','fPo4','fNotiz'].forEach(id => {
+  ['fPh','fTemp','fNo3','fKh','fGh','fPo4','fNotiz'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('fDatum').value = new Date().toISOString().slice(0,10);
@@ -554,9 +540,7 @@ function saveMeasurement() {
     datum,
     ph:    getF('fPh'),
     temp:  getF('fTemp'),
-    no2:   getF('fNo2'),
     no3:   getF('fNo3'),
-    nh4:   getF('fNh4'),
     kh:    getF('fKh'),
     gh:    getF('fGh'),
     po4:   getF('fPo4'),
