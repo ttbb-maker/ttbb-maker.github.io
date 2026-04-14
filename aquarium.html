@@ -54,6 +54,48 @@
   .btn-add:active { opacity:.8; }
   .btn-cancel { width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;cursor:pointer; }
 
+  /* Liste */
+  .list-header { display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;gap:8px; }
+  .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1; }
+  .sync-dot { width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0; }
+  .sync-dot.ok  { background:var(--ok); }
+  .sync-dot.err { background:var(--danger); }
+  .btn-refresh { background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;line-height:1; }
+  .monat-select { background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;padding:7px 10px;outline:none;cursor:pointer; }
+  .monat-select:focus { border-color:var(--accent); }
+
+  .mess-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
+
+  .mess-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;transition:border-color .2s; }
+  .mess-card.has-danger { border-color:rgba(245,71,71,.4); }
+  .mess-card.has-warn   { border-color:rgba(245,165,71,.25); }
+
+  .mess-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px; }
+  .mess-date { font-size:15px;font-weight:700;color:var(--text); }
+  .mess-days { font-size:11px;color:var(--muted);margin-top:1px; }
+  .overall-dot { width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0; }
+  .overall-dot.ok     { background:var(--ok); }
+  .overall-dot.warn   { background:var(--warn); }
+  .overall-dot.danger { background:var(--danger); }
+
+  .mess-values { display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px; }
+  .val-badge { display:inline-flex;align-items:baseline;gap:3px;border:1px solid var(--border);border-radius:20px;padding:3px 9px;font-size:12px;color:var(--muted); }
+  .val-badge .val-name { font-size:9px;text-transform:uppercase;letter-spacing:.05em;opacity:.7; }
+  .val-badge.ok     { border-color:rgba(71,245,122,.4);color:var(--ok); }
+  .val-badge.warn   { border-color:rgba(245,165,71,.4);color:var(--warn); }
+  .val-badge.danger { border-color:rgba(245,71,71,.5);color:var(--danger); }
+
+  .mess-notiz { font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:6px; }
+
+  .btn-del,.btn-edit { position:absolute;top:10px;display:none;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;align-items:center;justify-content:center;font-size:14px; }
+  .btn-del  { right:10px;background:var(--danger);color:white; }
+  .btn-edit { right:42px;background:var(--accent2);color:#0e0f11; }
+  .mess-card:hover .btn-del,.mess-card:hover .btn-edit,
+  .mess-card:active .btn-del,.mess-card:active .btn-edit { display:flex; }
+
+  .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
+  .empty-icon  { font-size:40px;margin-bottom:12px;opacity:.4; }
+
   /* Toast */
   .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
   .toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
@@ -147,6 +189,17 @@
   <button class="btn-cancel" id="btnCancel" onclick="cancelEdit()" style="display:none">Abbrechen</button>
 </div>
 
+<div class="list-header">
+  <div class="list-title">Messungen</div>
+  <div class="sync-dot" id="syncDot"></div>
+  <button class="btn-refresh" onclick="loadData()" title="Aktualisieren">↻</button>
+  <select class="monat-select" id="monatSelect" onchange="renderList()">
+    <option value="all">Alle</option>
+  </select>
+</div>
+
+<div class="mess-list" id="messList"></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -209,7 +262,9 @@ async function loadData() {
     messungen = d.messungen || [];
     settings  = Object.assign({ erinnerung_tage:7, aquarium_name:'Mein Aquarium' }, d.settings);
     localStorage.setItem('aq_messungen', JSON.stringify(messungen));
+    setSyncDot(true);
   } catch {
+    setSyncDot(false);
     showToast('Verbindungsfehler – lokale Daten', true);
     const local = localStorage.getItem('aq_messungen');
     if (local) messungen = JSON.parse(local);
@@ -226,9 +281,133 @@ async function saveToBackend() {
     });
     if (!r.ok) throw new Error();
     localStorage.setItem('aq_messungen', JSON.stringify(messungen));
+    setSyncDot(true);
   } catch {
+    setSyncDot(false);
     showToast('Speichern fehlgeschlagen', true);
   }
+}
+
+// --- Liste ---
+
+function getOverallStatus(m) {
+  const keys = ['ph','temp','no2','no3','nh4','kh','gh','po4'];
+  let worst = 'none';
+  for (const k of keys) {
+    const s = getStatus(k, m[k]);
+    if (s === 'danger') return 'danger';
+    if (s === 'warn')   worst = 'warn';
+    else if (s === 'ok' && worst === 'none') worst = 'ok';
+  }
+  return worst;
+}
+
+function updateMonatSelect() {
+  const sel     = document.getElementById('monatSelect');
+  const current = sel.value;
+  const months  = new Set();
+  messungen.forEach(m => {
+    const d = new Date(m.datum);
+    months.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  });
+  sel.innerHTML = '<option value="all">Alle</option>';
+  [...months].sort().reverse().forEach(ym => {
+    const [y, mo] = ym.split('-');
+    const label   = new Date(y, mo-1, 1).toLocaleString('de', {month:'long', year:'numeric'});
+    const opt     = document.createElement('option');
+    opt.value     = ym;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  });
+  if (current && current !== 'all') {
+    sel.value = sel.querySelector(`option[value="${current}"]`) ? current : 'all';
+  }
+}
+
+function renderList() {
+  const filter   = document.getElementById('monatSelect').value;
+  let filtered   = filter === 'all' ? messungen : messungen.filter(m => m.datum.startsWith(filter));
+  filtered       = [...filtered].sort((a,b) => b.datum.localeCompare(a.datum));
+  const list     = document.getElementById('messList');
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔬</div><div>Keine Messungen vorhanden</div></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(renderCard).join('');
+}
+
+function renderCard(m) {
+  const dateStr = new Date(m.datum).toLocaleDateString('de', {day:'2-digit', month:'2-digit', year:'numeric'});
+  const days    = daysSince(m.datum);
+  const daysStr = days === 0 ? 'Heute' : days === 1 ? 'Gestern' : `vor ${days} Tagen`;
+  const overall = getOverallStatus(m);
+
+  const badges = Object.entries(RANGES)
+    .filter(([k]) => m[k] != null)
+    .map(([k, r]) => {
+      const s = getStatus(k, m[k]);
+      return `<span class="val-badge ${s === 'none' ? '' : s}"><span class="val-name">${r.name}</span>${m[k]}${r.unit}</span>`;
+    }).join('');
+
+  const notizHtml = m.notiz
+    ? `<div class="mess-notiz">${m.notiz}</div>`
+    : '';
+
+  const cardClass = overall === 'danger' ? ' has-danger' : overall === 'warn' ? ' has-warn' : '';
+  const dotHtml   = overall !== 'none'
+    ? `<div class="overall-dot ${overall}"></div>`
+    : '';
+
+  return `<div class="mess-card${cardClass}">
+    <button class="btn-edit" onclick="startEdit('${m.id}')">✏</button>
+    <button class="btn-del"  onclick="deleteMeasurement('${m.id}')">✕</button>
+    <div class="mess-top">
+      <div>
+        <div class="mess-date">${dateStr}</div>
+        <div class="mess-days">${daysStr}</div>
+      </div>
+      ${dotHtml}
+    </div>
+    ${badges ? `<div class="mess-values">${badges}</div>` : ''}
+    ${notizHtml}
+  </div>`;
+}
+
+function deleteMeasurement(id) {
+  if (!confirm('Messung löschen?')) return;
+  messungen = messungen.filter(m => m.id !== id);
+  saveToBackend();
+  updateUI();
+  showToast('Messung gelöscht');
+}
+
+function startEdit(id) {
+  const m = messungen.find(x => x.id === id);
+  if (!m) return;
+  editId = id;
+
+  document.getElementById('fDatum').value = m.datum  ?? '';
+  document.getElementById('fPh').value    = m.ph     ?? '';
+  document.getElementById('fTemp').value  = m.temp   ?? '';
+  document.getElementById('fNo2').value   = m.no2    ?? '';
+  document.getElementById('fNo3').value   = m.no3    ?? '';
+  document.getElementById('fNh4').value   = m.nh4    ?? '';
+  document.getElementById('fKh').value    = m.kh     ?? '';
+  document.getElementById('fGh').value    = m.gh     ?? '';
+  document.getElementById('fPo4').value   = m.po4    ?? '';
+  document.getElementById('fNotiz').value = m.notiz  ?? '';
+
+  if (!moreOpen) toggleMore();
+  document.getElementById('formCard').classList.add('edit-mode');
+  document.getElementById('formTitle').textContent   = 'Messung bearbeiten';
+  document.getElementById('btnAdd').textContent      = 'Aktualisieren';
+  document.getElementById('btnCancel').style.display = 'block';
+  document.getElementById('formCard').scrollIntoView({behavior:'smooth'});
+}
+
+function setSyncDot(ok) {
+  document.getElementById('syncDot').className = 'sync-dot' + (ok ? ' ok' : ' err');
 }
 
 // --- UI ---
@@ -273,6 +452,9 @@ function updateUI() {
     tempEl.textContent = '—';
     tempEl.className   = 'stat-value';
   }
+
+  updateMonatSelect();
+  renderList();
 }
 
 // --- Formular ---
