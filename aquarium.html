@@ -87,6 +87,20 @@
 
   .mess-notiz { font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:6px; }
 
+  .dos-section { border-top:1px solid var(--border);padding-top:8px;margin-top:8px; }
+  .dos-title { font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px; }
+  .dos-row { display:flex;gap:10px;flex-wrap:wrap; }
+  .dos-item { font-size:12px;color:var(--muted); }
+  .dos-item .val-name { font-size:9px;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin-right:2px; }
+  .dos-item strong { color:var(--text); }
+  .emp-item { font-size:12px;font-weight:600; }
+  .emp-item .val-name { font-size:9px;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin-right:2px; }
+  .emp-item.up   { color:var(--ok); }
+  .emp-item.down { color:var(--warn); }
+  .emp-item.same { color:var(--muted); }
+  .dos-divider { display:flex;align-items:center;gap:8px;padding:10px 0 4px;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase; }
+  .dos-divider::after { content:'';flex:1;height:1px;background:var(--border); }
+
   .btn-del,.btn-edit { position:absolute;top:10px;display:none;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;align-items:center;justify-content:center;font-size:14px; }
   .btn-del  { right:10px;background:var(--danger);color:white; }
   .btn-edit { right:42px;background:var(--accent2);color:#0e0f11; }
@@ -213,6 +227,25 @@
     </div>
   </div>
 
+  <div class="dos-divider">Dosierung (ml/Tag)</div>
+  <div class="field-row">
+    <div class="field">
+      <label>KH (ml/Tag)</label>
+      <input type="number" id="fDosKh" placeholder="z.B. 15.5" step="0.1" min="0">
+    </div>
+    <div class="field">
+      <label>Ca (ml/Tag)</label>
+      <input type="number" id="fDosCa" placeholder="z.B. 6.0" step="0.1" min="0">
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label>Mg (ml/Tag)</label>
+      <input type="number" id="fDosMg" placeholder="z.B. 0.5" step="0.1" min="0">
+    </div>
+    <div class="field"></div>
+  </div>
+
   <div class="field">
     <label>Notiz</label>
     <input type="text" id="fNotiz" placeholder="Optionale Bemerkung...">
@@ -250,6 +283,24 @@
           <input type="number" id="sErinnerung" placeholder="7" min="1" max="365">
         </div>
       </div>
+      <div class="dos-divider" style="cursor:default">Zielwerte Dosierung</div>
+      <div class="settings-row">
+        <div class="field">
+          <label>KH Zielwert (°dKH)</label>
+          <input type="number" id="sTargetKh" placeholder="7.5" step="0.1" min="0">
+        </div>
+        <div class="field">
+          <label>Ca Zielwert (mg/L)</label>
+          <input type="number" id="sTargetCa" placeholder="420" step="1" min="0">
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="field">
+          <label>Mg Zielwert (mg/L)</label>
+          <input type="number" id="sTargetMg" placeholder="1350" step="1" min="0">
+        </div>
+        <div class="field"></div>
+      </div>
       <button class="btn-save-settings" onclick="saveSettings()">Speichern</button>
       <button class="btn-notif" id="btnNotif" onclick="requestNotification()">Benachrichtigungen erlauben</button>
       <div class="notif-status" id="notifStatus"></div>
@@ -276,9 +327,37 @@ const RANGES = {
 };
 
 let messungen = [];
-let settings  = { erinnerung_tage:7, aquarium_name:'Mein Aquarium' };
+let settings  = { erinnerung_tage:7, aquarium_name:'Mein Aquarium', target_kh:7.5, target_ca:420, target_mg:1350 };
 let editId    = null;
 let moreOpen  = false;
+
+function getTargets() {
+  return {
+    kh: parseFloat(settings.target_kh) || 7.5,
+    ca: parseFloat(settings.target_ca) || 420,
+    mg: parseFloat(settings.target_mg) || 1350
+  };
+}
+
+function calcEmpfehlung(m) {
+  const targets = getTargets();
+  const result  = {};
+  for (const k of ['kh','ca','mg']) {
+    const dose   = m.dosierung?.[k];
+    const value  = m[k];
+    const target = targets[k];
+    if (dose == null || value == null || value === 0) continue;
+    const recommended = Math.round(dose * (target / value) * 10) / 10;
+    const diff        = recommended - dose;
+    const threshold   = dose * 0.03; // < 3% Abweichung → "beibehalten"
+    result[k] = {
+      dose,
+      recommended,
+      direction: Math.abs(diff) < threshold ? 'same' : diff > 0 ? 'up' : 'down'
+    };
+  }
+  return result;
+}
 
 // --- Hilfsfunktionen ---
 
@@ -417,6 +496,27 @@ function renderCard(m) {
     ? `<div class="overall-dot ${overall}"></div>`
     : '';
 
+  // Dosierung dokumentiert
+  const dosNames = { kh:'KH', ca:'Ca', mg:'Mg' };
+  const hasDos   = m.dosierung && ['kh','ca','mg'].some(k => m.dosierung[k] != null);
+  const dosHtml  = hasDos ? `<div class="dos-section">
+    <div class="dos-title">Dosierung (ml/Tag)</div>
+    <div class="dos-row">${['kh','ca','mg'].filter(k => m.dosierung[k] != null)
+      .map(k => `<span class="dos-item"><span class="val-name">${dosNames[k]}</span><strong>${m.dosierung[k]}</strong> ml</span>`)
+      .join('')}</div>
+  </div>` : '';
+
+  // Dosierempfehlung
+  const emp    = calcEmpfehlung(m);
+  const arrows = { up:'↑', down:'↓', same:'→' };
+  const empEntries = Object.entries(emp);
+  const empHtml = empEntries.length ? `<div class="dos-section">
+    <div class="dos-title">Empfehlung nächste Dosierung</div>
+    <div class="dos-row">${empEntries
+      .map(([k,e]) => `<span class="emp-item ${e.direction}"><span class="val-name">${dosNames[k]}</span><strong>${e.recommended}</strong> ml ${arrows[e.direction]}</span>`)
+      .join('')}</div>
+  </div>` : '';
+
   return `<div class="mess-card${cardClass}">
     <button class="btn-edit" onclick="startEdit('${m.id}')">✏</button>
     <button class="btn-del"  onclick="deleteMeasurement('${m.id}')">✕</button>
@@ -428,6 +528,8 @@ function renderCard(m) {
       ${dotHtml}
     </div>
     ${badges ? `<div class="mess-values">${badges}</div>` : ''}
+    ${dosHtml}
+    ${empHtml}
     ${notizHtml}
   </div>`;
 }
@@ -453,9 +555,12 @@ function startEdit(id) {
   document.getElementById('fCa').value    = m.ca    ?? '';
   document.getElementById('fMg').value    = m.mg    ?? '';
   document.getElementById('fSal').value   = m.sal   ?? '';
-  document.getElementById('fGh').value    = m.gh     ?? '';
-  document.getElementById('fPo4').value   = m.po4    ?? '';
-  document.getElementById('fNotiz').value = m.notiz  ?? '';
+  document.getElementById('fGh').value     = m.gh              ?? '';
+  document.getElementById('fPo4').value    = m.po4             ?? '';
+  document.getElementById('fDosKh').value  = m.dosierung?.kh   ?? '';
+  document.getElementById('fDosCa').value  = m.dosierung?.ca   ?? '';
+  document.getElementById('fDosMg').value  = m.dosierung?.mg   ?? '';
+  document.getElementById('fNotiz').value  = m.notiz           ?? '';
 
   if (!moreOpen) toggleMore();
   document.getElementById('formCard').classList.add('edit-mode');
@@ -538,7 +643,7 @@ function getF(id) {
 }
 
 function resetForm() {
-  ['fPh','fTemp','fNo3','fKh','fGh','fPo4','fCa','fMg','fSal','fNotiz'].forEach(id => {
+  ['fPh','fTemp','fNo3','fKh','fGh','fPo4','fCa','fMg','fSal','fDosKh','fDosCa','fDosMg','fNotiz'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('fDatum').value = new Date().toISOString().slice(0,10);
@@ -569,6 +674,11 @@ function saveMeasurement() {
     sal:   getF('fSal'),
     gh:    getF('fGh'),
     po4:   getF('fPo4'),
+    dosierung: {
+      kh: getF('fDosKh'),
+      ca: getF('fDosCa'),
+      mg: getF('fDosMg')
+    },
     notiz: document.getElementById('fNotiz').value.trim() || null
   };
 
@@ -636,12 +746,18 @@ function toggleSettings() {
 function updateSettingsForm() {
   document.getElementById('sName').value       = settings.aquarium_name  || '';
   document.getElementById('sErinnerung').value = settings.erinnerung_tage || 7;
+  document.getElementById('sTargetKh').value   = settings.target_kh      || 7.5;
+  document.getElementById('sTargetCa').value   = settings.target_ca      || 420;
+  document.getElementById('sTargetMg').value   = settings.target_mg      || 1350;
   updateNotifStatus();
 }
 
 async function saveSettings() {
   settings.aquarium_name   = document.getElementById('sName').value.trim() || 'Mein Aquarium';
   settings.erinnerung_tage = parseInt(document.getElementById('sErinnerung').value) || 7;
+  settings.target_kh       = parseFloat(document.getElementById('sTargetKh').value) || 7.5;
+  settings.target_ca       = parseFloat(document.getElementById('sTargetCa').value) || 420;
+  settings.target_mg       = parseFloat(document.getElementById('sTargetMg').value) || 1350;
   try {
     await fetch(API + '?action=settings', {
       method:'POST',
