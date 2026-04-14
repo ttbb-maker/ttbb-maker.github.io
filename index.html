@@ -464,8 +464,16 @@ async function exportBericht() {
     });
     var data = await r.json();
     if (data.ok) {
-      showToast('Bericht gespeichert!');
-      window.open(data.url, '_blank');
+      var link = document.createElement('a');
+      link.href = data.url;
+      link.target = '_blank';
+      link.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#d4f547;border-radius:12px;padding:12px 20px;font-size:13px;font-weight:700;text-decoration:none;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4);';
+      link.textContent = '\uD83D\uDCC4 Bericht öffnen';
+      link.id = 'berichtLink';
+      document.getElementById('berichtLink') && document.getElementById('berichtLink').remove();
+      document.body.appendChild(link);
+      setTimeout(function(){link.remove();}, 8000);
+      showToast('Bericht auf Synology gespeichert!');
     } else {
       showToast('Fehler: ' + (data.error || 'Unbekannt'));
     }
