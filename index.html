@@ -78,6 +78,10 @@
   <div class="field-row">
     <div class="field">
       <label>Von</label>
+      <div class="tags" style="margin-bottom:6px;">
+        <div class="tag" onclick="selectVon(this)">Hüffenhardt</div>
+        <div class="tag" onclick="selectVon(this)">Bad Rappenau Fürfeld</div>
+      </div>
       <input type="text" id="von" placeholder="z.B. Bretten">
     </div>
     <div class="field">
@@ -218,6 +222,13 @@ function toggleRetour(val) {
     document.getElementById('kmHint').textContent = isRetour ? 'Hin & Zurueck: ' + (kmVal*2).toLocaleString('de-DE') + ' km' : 'Nur Hinfahrt: ' + kmVal.toLocaleString('de-DE') + ' km';
     document.getElementById('kmHint').style.color = 'var(--accent)';
   }
+}
+
+function selectVon(el) {
+  document.querySelectorAll('#von').forEach(function(){});
+  document.querySelectorAll('.tags .tag[onclick^="selectVon"]').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('von').value = el.textContent;
 }
 
 function selectTag(el) {
