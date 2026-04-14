@@ -16,9 +16,12 @@
   .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center; }
   .stat-value { font-size:20px;font-weight:700;color:var(--accent);line-height:1; }
   .stat-label { font-size:9px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.1em; }
-  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px; }
+  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .3s; }
+  .form-card.edit-mode { border-color:var(--accent2); }
   .form-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
   .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
+  .form-card.edit-mode .form-title { color:var(--accent2); }
+  .form-card.edit-mode .form-title::before { background:var(--accent2); }
   .field-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
   .field { margin-bottom:10px; }
   label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:5px; }
@@ -33,9 +36,13 @@
   .tag.active { background:var(--accent);border-color:var(--accent);color:#0e0f11;font-weight:700; }
   .btn-add { width:100%;margin-top:14px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer; }
   .btn-add:active { opacity:.8; }
-  .list-header { display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0; }
-  .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em; }
-  .btn-export { background:transparent;border:1px solid var(--accent2);color:var(--accent2);border-radius:8px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer; }
+  .btn-cancel { width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;cursor:pointer; }
+  .list-header { display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;gap:8px; }
+  .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1; }
+  .sync-dot { width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0; }
+  .sync-dot.ok { background:#47f57a; }
+  .sync-dot.err { background:var(--danger); }
+  .btn-export { background:transparent;border:1px solid var(--accent2);color:var(--accent2);border-radius:8px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap; }
   .btn-export:disabled { opacity:.3;cursor:not-allowed; }
   .data-bar { display:flex;gap:8px;padding:12px 20px 0;justify-content:flex-end; }
   .btn-data { background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:11px;cursor:pointer; }
@@ -45,16 +52,28 @@
   .fahrt-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
   .fahrt-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative; }
   .fahrt-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px; }
-  .fahrt-route { font-size:15px;font-weight:700;color:var(--text);line-height:1.3;flex:1;padding-right:10px; }
+  .fahrt-route { font-size:15px;font-weight:700;color:var(--text);line-height:1.3;flex:1;padding-right:60px; }
   .fahrt-km { font-size:18px;font-weight:700;color:var(--accent);white-space:nowrap; }
   .fahrt-meta { display:flex;gap:6px;align-items:center;flex-wrap:wrap; }
   .fahrt-date { font-size:11px;color:var(--muted); }
   .fahrt-zweck { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--muted); }
   .fahrt-retour { border:1px solid var(--accent);border-radius:20px;padding:2px 8px;font-size:10px;color:var(--accent); }
-  .btn-delete { position:absolute;top:10px;right:10px;display:none;background:var(--danger);color:white;border:none;border-radius:6px;width:26px;height:26px;font-size:16px;cursor:pointer;align-items:center;justify-content:center; }
-  .fahrt-card:hover .btn-delete,.fahrt-card:active .btn-delete { display:flex; }
+  .btn-delete,.btn-edit { position:absolute;top:10px;display:none;border:none;border-radius:6px;width:26px;height:26px;font-size:14px;cursor:pointer;align-items:center;justify-content:center; }
+  .btn-delete { right:10px;background:var(--danger);color:white;font-size:16px; }
+  .btn-edit { right:42px;background:var(--accent2);color:#0e0f11; }
+  .fahrt-card:hover .btn-delete,.fahrt-card:active .btn-delete,
+  .fahrt-card:hover .btn-edit,.fahrt-card:active .btn-edit { display:flex; }
   .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
   .empty-icon { font-size:40px;margin-bottom:12px;opacity:.4; }
+  .jahres-section { margin:20px 20px 0; }
+  .jahres-toggle { font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border); }
+  .jahres-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px; }
+  .jahres-card { background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:border-color .2s; }
+  .jahres-card:hover { border-color:var(--accent2); }
+  .jahres-card.active { border-color:var(--accent); }
+  .jahres-name { font-size:11px;color:var(--muted);margin-bottom:4px; }
+  .jahres-km { font-size:18px;font-weight:700;color:var(--accent); }
+  .jahres-info { font-size:10px;color:var(--muted);margin-top:2px; }
   .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
   .toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
 </style>
@@ -73,21 +92,23 @@
   <div class="stat-box"><div class="stat-value" id="statPauschale">0 &#8364;</div><div class="stat-label">Km-Pauschale</div></div>
 </div>
 
-<div class="form-card">
-  <div class="form-title">Fahrt eintragen</div>
-  <div class="field-row">
-    <div class="field">
-      <label>Von</label>
-      <div class="tags" style="margin-bottom:6px;">
-        <div class="tag" onclick="selectVon(this)">Hüffenhardt</div>
-        <div class="tag" onclick="selectVon(this)">Bad Rappenau Fürfeld</div>
-      </div>
-      <input type="text" id="von" placeholder="z.B. Bretten">
+<div class="form-card" id="formCard">
+  <div class="form-title" id="formTitle">Fahrt eintragen</div>
+  <div class="field">
+    <label>Von</label>
+    <div class="tags" id="vonTags">
+      <div class="tag" onclick="selectVon(this)">H&#252;ffenhardt</div>
+      <div class="tag" onclick="selectVon(this)">Bad Rappenau F&#252;rfeld</div>
     </div>
-    <div class="field">
-      <label>Nach</label>
-      <input type="text" id="nach" placeholder="z.B. Karlsruhe">
+    <input type="text" id="von" placeholder="Oder manuell eingeben ..." style="margin-top:8px;">
+  </div>
+  <div class="field">
+    <label>Nach</label>
+    <div class="tags" id="nachTags">
+      <div class="tag" onclick="selectNach(this)">Massenbachhausen Helmhof</div>
+      <div class="tag" onclick="selectNach(this)">Bad Rappenau</div>
     </div>
+    <input type="text" id="nach" placeholder="Oder manuell eingeben ..." style="margin-top:8px;">
   </div>
   <div class="field">
     <button class="btn-calc" id="btnCalc" onclick="berechneKm()">&#10227; Kilometer automatisch berechnen</button>
@@ -120,22 +141,32 @@
     </div>
     <input type="text" id="zweckCustom" placeholder="Oder eigenen Anlass eingeben ..." style="margin-top:8px;">
   </div>
-  <button class="btn-add" onclick="addFahrt()">+ Fahrt hinzufuegen</button>
+  <button class="btn-add" id="btnAdd" onclick="addFahrt()">+ Fahrt hinzufuegen</button>
+  <button class="btn-cancel" id="btnCancel" onclick="cancelEdit()" style="display:none;">Abbrechen</button>
 </div>
 
 <div class="list-header">
   <div class="list-title" id="listTitle">Meine Fahrten</div>
+  <div class="sync-dot" id="syncDot" title="Sync-Status"></div>
   <input type="month" id="monatSelect" class="monat-select" onchange="render()">
-  <button class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>&#8595; Export</button>
+  <button class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>&#8595; CSV</button>
 </div>
 
 <div class="data-bar">
-  <button class="btn-data" onclick="exportJSON()">&#8593; Daten sichern</button>
-  <label class="btn-data" style="cursor:pointer;">&#8595; Daten importieren<input type="file" accept=".json" onchange="importJSON(this)" style="display:none;"></label>
+  <button class="btn-data" onclick="exportJSON()">&#8593; Sichern</button>
+  <label class="btn-data" style="cursor:pointer;">&#8595; Importieren<input type="file" accept=".json" onchange="importJSON(this)" style="display:none;"></label>
 </div>
 
 <div class="fahrt-list" id="fahrtList">
   <div class="empty-state"><div class="empty-icon">&#128663;</div>Noch keine Fahrten eingetragen</div>
+</div>
+
+<div class="jahres-section">
+  <div class="jahres-toggle" onclick="toggleJahre()">
+    <span id="jahresTitel">Jahres&#252;bersicht</span>
+    <span id="jahresArrow">&#9660;</span>
+  </div>
+  <div id="jahresGrid" style="display:none;"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -146,6 +177,8 @@ var API_KEY = 'fb_k7mP9xQr2nLw';
 
 var fahrten = [];
 var isRetour = true;
+var editId = null;
+var jahreOffen = false;
 
 document.getElementById('datum').value = new Date().toISOString().split('T')[0];
 var _now0 = new Date();
@@ -157,60 +190,65 @@ async function loadFahrten() {
     var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}});
     if (r.ok) {
       var remote = await r.json();
-      // Nur übernehmen wenn API Daten hat, sonst lokale behalten
       fahrten = remote.length > 0 ? remote : local;
+      setSyncDot(true);
     } else {
       fahrten = local;
+      setSyncDot(false);
     }
   } catch(e) {
     fahrten = local;
-    showToast('Offline – lokale Daten geladen');
+    setSyncDot(false);
+    showToast('Offline \u2013 lokale Daten geladen');
   }
   render();
+}
+
+async function save() {
+  localStorage.setItem('fahrten', JSON.stringify(fahrten));
+  try {
+    var r = await fetch(API_URL, {method:'POST', headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'}, body:JSON.stringify(fahrten)});
+    setSyncDot(r.ok);
+    return r.ok;
+  } catch(e) {
+    setSyncDot(false);
+    return false;
+  }
+}
+
+function setSyncDot(ok) {
+  var d = document.getElementById('syncDot');
+  d.className = 'sync-dot ' + (ok ? 'ok' : 'err');
+  d.title = ok ? 'Synology: gespeichert' : 'Nur lokal gespeichert';
 }
 
 async function berechneKm() {
   var von = document.getElementById('von').value.trim();
   var nach = document.getElementById('nach').value.trim();
   if (!von || !nach) { showToast('Bitte Von und Nach eingeben!'); return; }
-
   var btn = document.getElementById('btnCalc');
   var hint = document.getElementById('kmHint');
-  btn.disabled = true;
-  btn.textContent = '... berechne Route';
-  hint.textContent = 'Suche Orte...';
-  hint.style.color = 'var(--muted)';
-
+  btn.disabled = true; btn.textContent = '... berechne Route';
+  hint.textContent = 'Suche Orte...'; hint.style.color = 'var(--muted)';
   try {
     var r1 = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(von) + '&limit=1&countrycodes=de,at,ch');
     var d1 = await r1.json();
-    if (!d1.length) { hint.textContent = '"' + von + '" nicht gefunden - genauer eingeben'; hint.style.color='var(--danger)'; btn.disabled=false; btn.textContent='Kilometer automatisch berechnen'; return; }
-
+    if (!d1.length) { hint.textContent = '"' + von + '" nicht gefunden'; hint.style.color='var(--danger)'; btn.disabled=false; btn.textContent='Kilometer automatisch berechnen'; return; }
     var r2 = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(nach) + '&limit=1&countrycodes=de,at,ch');
     var d2 = await r2.json();
-    if (!d2.length) { hint.textContent = '"' + nach + '" nicht gefunden - genauer eingeben'; hint.style.color='var(--danger)'; btn.disabled=false; btn.textContent='Kilometer automatisch berechnen'; return; }
-
+    if (!d2.length) { hint.textContent = '"' + nach + '" nicht gefunden'; hint.style.color='var(--danger)'; btn.disabled=false; btn.textContent='Kilometer automatisch berechnen'; return; }
     hint.textContent = 'Berechne Strecke...';
-
     var r3 = await fetch('https://router.project-osrm.org/route/v1/driving/' + d1[0].lon + ',' + d1[0].lat + ';' + d2[0].lon + ',' + d2[0].lat + '?overview=false');
     var d3 = await r3.json();
-
     if (d3.code === 'Ok') {
       var km = parseFloat((d3.routes[0].distance / 1000).toFixed(1));
       document.getElementById('km').value = km;
-      var gesamt = isRetour ? (km * 2).toLocaleString('de-DE') : km.toLocaleString('de-DE');
+      var gesamt = isRetour ? (km*2).toLocaleString('de-DE') : km.toLocaleString('de-DE');
       hint.textContent = 'Strecke: ' + km.toLocaleString('de-DE') + ' km' + (isRetour ? ' - Hin & Zurueck: ' + gesamt + ' km' : '');
       hint.style.color = 'var(--accent)';
-    } else {
-      hint.textContent = 'Route nicht gefunden - km manuell eingeben';
-      hint.style.color = 'var(--danger)';
-    }
-  } catch(e) {
-    hint.textContent = 'Kein Internet oder Fehler: ' + e.message;
-    hint.style.color = 'var(--danger)';
-  }
-  btn.disabled = false;
-  btn.textContent = 'Kilometer automatisch berechnen';
+    } else { hint.textContent = 'Route nicht gefunden - km manuell eingeben'; hint.style.color='var(--danger)'; }
+  } catch(e) { hint.textContent = 'Fehler: ' + e.message; hint.style.color='var(--danger)'; }
+  btn.disabled = false; btn.textContent = 'Kilometer automatisch berechnen';
 }
 
 function toggleRetour(val) {
@@ -225,14 +263,19 @@ function toggleRetour(val) {
 }
 
 function selectVon(el) {
-  document.querySelectorAll('#von').forEach(function(){});
-  document.querySelectorAll('.tags .tag[onclick^="selectVon"]').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('#vonTags .tag').forEach(function(t){t.classList.remove('active');});
   el.classList.add('active');
   document.getElementById('von').value = el.textContent;
 }
 
+function selectNach(el) {
+  document.querySelectorAll('#nachTags .tag').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('nach').value = el.textContent;
+}
+
 function selectTag(el) {
-  document.querySelectorAll('#tagContainer .tag').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('#tagContainer .tag').forEach(function(t){t.classList.remove('active');});
   el.classList.add('active');
   document.getElementById('zweckCustom').value = '';
 }
@@ -251,118 +294,187 @@ function addFahrt() {
   var km = isRetour ? parseFloat((kmE*2).toFixed(1)) : kmE;
   var datum = document.getElementById('datum').value;
   var zweck = getZweck();
-  if (!von||!nach||!kmE||!datum) { showToast('Bitte alle Felder ausfuellen!'); return; }
-  fahrten.unshift({id:Date.now(),datum:datum,von:von,nach:nach,km:km,kmE:kmE,retour:isRetour,zweck:zweck});
+  if (!von||!nach||!kmE||!datum) { showToast('Bitte alle Felder ausf\u00fcllen!'); return; }
+  if (editId !== null) {
+    var idx = fahrten.findIndex(function(f){return f.id===editId;});
+    if (idx !== -1) fahrten[idx] = {id:editId,datum:datum,von:von,nach:nach,km:km,kmE:kmE,retour:isRetour,zweck:zweck};
+    showToast('Fahrt aktualisiert!');
+    cancelEdit();
+  } else {
+    fahrten.unshift({id:Date.now(),datum:datum,von:von,nach:nach,km:km,kmE:kmE,retour:isRetour,zweck:zweck});
+    showToast('Fahrt gespeichert!');
+    resetForm();
+  }
   save(); render();
-  showToast('Fahrt gespeichert!');
-  document.getElementById('von').value='';
-  document.getElementById('nach').value='';
-  document.getElementById('km').value='';
-  document.getElementById('zweckCustom').value='';
-  document.getElementById('kmHint').textContent='';
-  document.getElementById('datum').value=new Date().toISOString().split('T')[0];
+}
+
+function editFahrt(id) {
+  var f = fahrten.find(function(f){return f.id===id;});
+  if (!f) return;
+  editId = id;
+  document.getElementById('von').value = f.von;
+  document.getElementById('nach').value = f.nach;
+  document.getElementById('km').value = f.kmE || f.km;
+  document.getElementById('datum').value = f.datum;
+  document.getElementById('zweckCustom').value = '';
+  document.querySelectorAll('#vonTags .tag').forEach(function(t){t.classList.toggle('active', t.textContent===f.von);});
+  document.querySelectorAll('#nachTags .tag').forEach(function(t){t.classList.toggle('active', t.textContent===f.nach);});
+  document.querySelectorAll('#tagContainer .tag').forEach(function(t){t.classList.toggle('active', t.textContent===f.zweck);});
+  if (!document.querySelector('#tagContainer .tag.active')) document.getElementById('zweckCustom').value = f.zweck;
+  isRetour = f.retour;
+  document.getElementById('tagHin').classList.toggle('active', !f.retour);
+  document.getElementById('tagRetour').classList.toggle('active', f.retour);
+  document.getElementById('formTitle').textContent = 'Fahrt bearbeiten';
+  document.getElementById('formCard').classList.add('edit-mode');
+  document.getElementById('btnAdd').textContent = 'Speichern';
+  document.getElementById('btnCancel').style.display = 'block';
+  document.getElementById('formCard').scrollIntoView({behavior:'smooth'});
+}
+
+function cancelEdit() {
+  editId = null;
+  resetForm();
+  document.getElementById('formTitle').textContent = 'Fahrt eintragen';
+  document.getElementById('formCard').classList.remove('edit-mode');
+  document.getElementById('btnAdd').textContent = '+ Fahrt hinzufuegen';
+  document.getElementById('btnCancel').style.display = 'none';
+}
+
+function resetForm() {
+  document.getElementById('von').value = '';
+  document.getElementById('nach').value = '';
+  document.getElementById('km').value = '';
+  document.getElementById('zweckCustom').value = '';
+  document.getElementById('kmHint').textContent = '';
+  document.getElementById('datum').value = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('#vonTags .tag').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('#nachTags .tag').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('#tagContainer .tag').forEach(function(t,i){t.classList.toggle('active',i===0);});
-  isRetour=true;
+  isRetour = true;
   document.getElementById('tagHin').classList.remove('active');
   document.getElementById('tagRetour').classList.add('active');
 }
 
 function deleteFahrt(id) {
-  fahrten=fahrten.filter(function(f){return f.id!==id;});
+  if (!confirm('Fahrt wirklich l\u00f6schen?')) return;
+  fahrten = fahrten.filter(function(f){return f.id!==id;});
   save(); render();
 }
 
-async function save() {
-  localStorage.setItem('fahrten',JSON.stringify(fahrten));
-  try {
-    var r = await fetch(API_URL, {method:'POST',headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'},body:JSON.stringify(fahrten)});
-    return r.ok;
-  } catch(e) { return false; }
+function render() {
+  var msv = document.getElementById('monatSelect').value;
+  var parts = msv.split('-');
+  var j = parseInt(parts[0]), m = parseInt(parts[1])-1;
+  var sel = new Date(j,m,1);
+  var mn = sel.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+  var dm = fahrten.filter(function(f){var d=new Date(f.datum);return d.getMonth()===m&&d.getFullYear()===j;});
+  var list = document.getElementById('fahrtList');
+  var tkm = dm.reduce(function(s,f){return s+f.km;},0);
+  var p = (tkm*0.30).toFixed(2);
+  document.getElementById('headerLabel').textContent = mn;
+  document.getElementById('statFahrten').textContent = dm.length;
+  document.getElementById('statKm').textContent = tkm.toLocaleString('de-DE');
+  document.getElementById('statPauschale').textContent = parseFloat(p).toLocaleString('de-DE',{minimumFractionDigits:0})+' EUR';
+  document.getElementById('headerMeta').textContent = dm.length+' Fahrten - '+tkm.toLocaleString('de-DE')+' km gesamt';
+  document.getElementById('listTitle').textContent = mn;
+  document.getElementById('exportBtn').disabled = dm.length===0;
+  document.getElementById('exportBtn').textContent = sel.toLocaleDateString('de-DE',{month:'short'})+' CSV';
+  if (!dm.length) { list.innerHTML='<div class="empty-state"><div class="empty-icon">&#128663;</div>Noch keine Fahrten im '+sel.toLocaleDateString('de-DE',{month:'long'})+'</div>'; }
+  else list.innerHTML = dm.map(function(f){
+    var d = new Date(f.datum);
+    var ds = d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+    var rb = f.retour ? '<span class="fahrt-retour">Hin & Zurueck</span>' : '';
+    return '<div class="fahrt-card"><button class="btn-edit" onclick="editFahrt('+f.id+')">&#9998;</button><button class="btn-delete" onclick="deleteFahrt('+f.id+')">&#10005;</button><div class="fahrt-top"><div class="fahrt-route">'+f.von+' &rarr; '+f.nach+'</div><div class="fahrt-km">'+f.km.toLocaleString('de-DE')+' km</div></div><div class="fahrt-meta"><span class="fahrt-date">'+ds+'</span><span class="fahrt-zweck">'+f.zweck+'</span>'+rb+'</div></div>';
+  }).join('');
+  document.getElementById('jahresTitel').textContent = 'Jahres\u00fcbersicht '+j;
+  if (jahreOffen) renderJahre(j);
 }
 
-function render() {
-  var msv=document.getElementById('monatSelect').value;
-  var parts=msv.split('-');
-  var j=parseInt(parts[0]),m=parseInt(parts[1])-1;
-  var sel=new Date(j,m,1);
-  var mn=sel.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
-  var dm=fahrten.filter(function(f){var d=new Date(f.datum);return d.getMonth()===m&&d.getFullYear()===j;});
-  var list=document.getElementById('fahrtList');
-  var tkm=dm.reduce(function(s,f){return s+f.km;},0);
-  var p=(tkm*0.30).toFixed(2);
-  document.getElementById('headerLabel').textContent=mn;
-  document.getElementById('statFahrten').textContent=dm.length;
-  document.getElementById('statKm').textContent=tkm.toLocaleString('de-DE');
-  document.getElementById('statPauschale').textContent=parseFloat(p).toLocaleString('de-DE',{minimumFractionDigits:0})+' EUR';
-  document.getElementById('headerMeta').textContent=dm.length+' Fahrten - '+tkm.toLocaleString('de-DE')+' km gesamt';
-  document.getElementById('listTitle').textContent=mn;
-  document.getElementById('exportBtn').disabled=dm.length===0;
-  document.getElementById('exportBtn').textContent=sel.toLocaleDateString('de-DE',{month:'short'})+' CSV';
-  if (!dm.length) { list.innerHTML='<div class="empty-state"><div class="empty-icon">&#128663;</div>Noch keine Fahrten im '+sel.toLocaleDateString('de-DE',{month:'long'})+'</div>'; return; }
-  list.innerHTML=dm.map(function(f){
-    var d=new Date(f.datum);
-    var ds=d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
-    var rb=f.retour?'<span class="fahrt-retour">Hin & Zurueck</span>':'';
-    return '<div class="fahrt-card"><button class="btn-delete" onclick="deleteFahrt('+f.id+')">x</button><div class="fahrt-top"><div class="fahrt-route">'+f.von+' &rarr; '+f.nach+'</div><div class="fahrt-km">'+f.km.toLocaleString('de-DE')+' km</div></div><div class="fahrt-meta"><span class="fahrt-date">'+ds+'</span><span class="fahrt-zweck">'+f.zweck+'</span>'+rb+'</div></div>';
+function toggleJahre() {
+  jahreOffen = !jahreOffen;
+  var msv = document.getElementById('monatSelect').value;
+  var j = parseInt(msv.split('-')[0]);
+  document.getElementById('jahresArrow').textContent = jahreOffen ? '\u25b2' : '\u25bc';
+  var grid = document.getElementById('jahresGrid');
+  grid.style.display = jahreOffen ? 'grid' : 'none';
+  if (jahreOffen) renderJahre(j);
+}
+
+function renderJahre(j) {
+  var monate = ['Januar','Februar','M\u00e4rz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  var msv = document.getElementById('monatSelect').value;
+  var aktM = parseInt(msv.split('-')[1])-1;
+  document.getElementById('jahresGrid').className = 'jahres-grid';
+  document.getElementById('jahresGrid').innerHTML = monate.map(function(mn,i){
+    var dm = fahrten.filter(function(f){var d=new Date(f.datum);return d.getMonth()===i&&d.getFullYear()===j;});
+    var tkm = dm.reduce(function(s,f){return s+f.km;},0);
+    var aktiv = i===aktM ? ' active' : '';
+    return '<div class="jahres-card'+aktiv+'" onclick="wechselMonat('+j+','+(i+1)+')"><div class="jahres-name">'+mn+'</div><div class="jahres-km">'+(tkm?tkm.toLocaleString('de-DE')+' km':'\u2013')+'</div><div class="jahres-info">'+dm.length+' Fahrten \u00b7 '+parseFloat((tkm*0.30).toFixed(2)).toLocaleString('de-DE')+' \u20ac</div></div>';
   }).join('');
 }
 
+function wechselMonat(j, m) {
+  document.getElementById('monatSelect').value = j+'-'+String(m).padStart(2,'0');
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
 function exportCSV() {
-  var msv=document.getElementById('monatSelect').value;
-  var parts=msv.split('-');
-  var j=parseInt(parts[0]),m=parseInt(parts[1])-1;
-  var sel=new Date(j,m,1);
-  var dm=fahrten.filter(function(f){var d=new Date(f.datum);return d.getMonth()===m&&d.getFullYear()===j;});
+  var msv = document.getElementById('monatSelect').value;
+  var parts = msv.split('-');
+  var j = parseInt(parts[0]), m = parseInt(parts[1])-1;
+  var sel = new Date(j,m,1);
+  var dm = fahrten.filter(function(f){var d=new Date(f.datum);return d.getMonth()===m&&d.getFullYear()===j;});
   if (!dm.length) return;
-  var mn=sel.toLocaleDateString('de-DE',{month:'long'});
-  var tkm=dm.reduce(function(s,f){return s+f.km;},0);
-  var rows=['Datum;Von;Nach;Hin und Zurueck;Kilometer;Zweck;Km-Pauschale (0,30 EUR)'];
+  var mn = sel.toLocaleDateString('de-DE',{month:'long'});
+  var tkm = dm.reduce(function(s,f){return s+f.km;},0);
+  var rows = ['Datum;Von;Nach;Hin und Zurueck;Kilometer;Zweck;Km-Pauschale (0,30 EUR)'];
   dm.forEach(function(f){
     rows.push(new Date(f.datum).toLocaleDateString('de-DE')+';'+f.von+';'+f.nach+';'+(f.retour?'Ja':'Nein')+';'+f.km+';'+f.zweck+';'+parseFloat((f.km*0.30).toFixed(2)));
   });
   rows.push(';;GESAMT;;'+tkm+';;'+parseFloat((tkm*0.30).toFixed(2)));
-  var blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
+  var blob = new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
   a.href=url; a.download='Fahrtenbuch_'+mn+'_'+j+'.csv';
   a.click(); URL.revokeObjectURL(url);
   showToast(mn+' '+j+' wird heruntergeladen');
 }
 
 function exportJSON() {
-  var blob=new Blob([JSON.stringify(fahrten,null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
+  var blob = new Blob([JSON.stringify(fahrten,null,2)],{type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
   a.href=url; a.download='Fahrtenbuch_Backup.json';
   a.click(); URL.revokeObjectURL(url);
   showToast('Backup gespeichert!');
 }
 
 function importJSON(input) {
-  var file=input.files[0];
+  var file = input.files[0];
   if (!file) return;
-  var reader=new FileReader();
-  reader.onload=function(e){
+  var reader = new FileReader();
+  reader.onload = function(e){
     try {
-      var data=JSON.parse(e.target.result);
+      var data = JSON.parse(e.target.result);
       if (!Array.isArray(data)) throw new Error();
-      var neu=0;
-      var ids=new Set(fahrten.map(function(f){return f.id;}));
+      var neu = 0;
+      var ids = new Set(fahrten.map(function(f){return f.id;}));
       data.forEach(function(f){if(!ids.has(f.id)){fahrten.push(f);neu++;}});
       fahrten.sort(function(a,b){return new Date(b.datum)-new Date(a.datum);});
       render();
       save().then(function(ok){
         showToast(ok ? neu+' Fahrten importiert & gespeichert!' : neu+' Fahrten importiert (nur lokal)');
       });
-    } catch(e) { showToast('Ungueltige Datei!'); }
+    } catch(e) { showToast('Ung\u00fcltige Datei!'); }
   };
   reader.readAsText(file);
-  input.value='';
+  input.value = '';
 }
 
 function showToast(msg) {
-  var t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2500);
 }
 
