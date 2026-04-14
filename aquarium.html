@@ -195,6 +195,22 @@
         <input type="number" id="fPo4" placeholder="z.B. 0.5" step="0.1" min="0">
       </div>
     </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Calcium (mg/L)</label>
+        <input type="number" id="fCa" placeholder="z.B. 420" step="1" min="0">
+      </div>
+      <div class="field">
+        <label>Magnesium (mg/L)</label>
+        <input type="number" id="fMg" placeholder="z.B. 1300" step="1" min="0">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Salinität (ppt)</label>
+        <input type="number" id="fSal" placeholder="z.B. 35" step="0.1" min="0">
+      </div>
+    </div>
   </div>
 
   <div class="field">
@@ -248,12 +264,15 @@ const API = 'https://tonibader.synology.me/aquarium-api.php';
 const KEY = 'aq_m7nK3pRx5wYz';
 
 const RANGES = {
-  ph:   { ok:[6.5,7.5],  warn:[6.0,8.0],  unit:'',     name:'pH'   },
-  temp: { ok:[24,28],    warn:[20,30],     unit:'°C',   name:'Temp' },
-  no3:  { ok:[0,25],     warn:[0,50],      unit:'mg/L', name:'NO₃'  },
-  kh:   { ok:[5,10],     warn:[3,15],      unit:'°dH',  name:'KH'   },
-  gh:   { ok:[8,15],     warn:[5,20],      unit:'°dH',  name:'GH'   },
-  po4:  { ok:[0,1.0],    warn:[0,2.0],     unit:'mg/L', name:'PO₄'  }
+  ph:   { ok:[6.5,7.5],    warn:[6.0,8.0],    unit:'',     name:'pH'       },
+  temp: { ok:[24,28],      warn:[20,30],       unit:'°C',   name:'Temp'     },
+  no3:  { ok:[0,25],       warn:[0,50],        unit:'mg/L', name:'NO₃'      },
+  kh:   { ok:[5,10],       warn:[3,15],        unit:'°dH',  name:'KH'       },
+  gh:   { ok:[8,15],       warn:[5,20],        unit:'°dH',  name:'GH'       },
+  po4:  { ok:[0,1.0],      warn:[0,2.0],       unit:'mg/L', name:'PO₄'      },
+  ca:   { ok:[380,450],    warn:[350,480],     unit:'mg/L', name:'Calcium'  },
+  mg:   { ok:[1250,1350],  warn:[1150,1400],   unit:'mg/L', name:'Magnes.'  },
+  sal:  { ok:[33,36],      warn:[31,38],       unit:'ppt',  name:'Salinität'}
 };
 
 let messungen = [];
@@ -427,10 +446,13 @@ function startEdit(id) {
   editId = id;
 
   document.getElementById('fDatum').value = m.datum  ?? '';
-  document.getElementById('fPh').value    = m.ph     ?? '';
-  document.getElementById('fTemp').value  = m.temp   ?? '';
-  document.getElementById('fNo3').value   = m.no3    ?? '';
-  document.getElementById('fKh').value    = m.kh     ?? '';
+  document.getElementById('fPh').value    = m.ph    ?? '';
+  document.getElementById('fTemp').value  = m.temp  ?? '';
+  document.getElementById('fNo3').value   = m.no3   ?? '';
+  document.getElementById('fKh').value    = m.kh    ?? '';
+  document.getElementById('fCa').value    = m.ca    ?? '';
+  document.getElementById('fMg').value    = m.mg    ?? '';
+  document.getElementById('fSal').value   = m.sal   ?? '';
   document.getElementById('fGh').value    = m.gh     ?? '';
   document.getElementById('fPo4').value   = m.po4    ?? '';
   document.getElementById('fNotiz').value = m.notiz  ?? '';
@@ -516,7 +538,7 @@ function getF(id) {
 }
 
 function resetForm() {
-  ['fPh','fTemp','fNo3','fKh','fGh','fPo4','fNotiz'].forEach(id => {
+  ['fPh','fTemp','fNo3','fKh','fGh','fPo4','fCa','fMg','fSal','fNotiz'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('fDatum').value = new Date().toISOString().slice(0,10);
@@ -542,6 +564,9 @@ function saveMeasurement() {
     temp:  getF('fTemp'),
     no3:   getF('fNo3'),
     kh:    getF('fKh'),
+    ca:    getF('fCa'),
+    mg:    getF('fMg'),
+    sal:   getF('fSal'),
     gh:    getF('fGh'),
     po4:   getF('fPo4'),
     notiz: document.getElementById('fNotiz').value.trim() || null
