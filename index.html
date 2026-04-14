@@ -165,6 +165,13 @@
   <div class="empty-state"><div class="empty-icon">&#128663;</div>Noch keine Fahrten eingetragen</div>
 </div>
 
+<div id="berichtBox" style="display:none;margin:12px 20px 0;">
+  <a id="berichtBoxLink" href="#" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:14px 16px;text-decoration:none;color:var(--accent);font-weight:700;font-size:14px;">
+    <span>&#128438; Bericht öffnen</span>
+    <span id="berichtBoxName" style="font-size:12px;color:var(--muted);font-weight:400;"></span>
+  </a>
+</div>
+
 <div class="jahres-section">
   <div class="jahres-toggle" onclick="toggleJahre()">
     <span id="jahresTitel">Jahres&#252;bersicht</span>
@@ -464,16 +471,8 @@ async function exportBericht() {
     });
     var data = await r.json();
     if (data.ok) {
-      var link = document.createElement('a');
-      link.href = data.url;
-      link.target = '_blank';
-      link.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#d4f547;border-radius:12px;padding:12px 20px;font-size:13px;font-weight:700;text-decoration:none;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4);';
-      link.textContent = '\uD83D\uDCC4 Bericht öffnen';
-      link.id = 'berichtLink';
-      document.getElementById('berichtLink') && document.getElementById('berichtLink').remove();
-      document.body.appendChild(link);
-      setTimeout(function(){link.remove();}, 8000);
-      showToast('Bericht auf Synology gespeichert!');
+      showBerichtLink(data.url);
+      showToast('Bericht gespeichert!');
     } else {
       showToast('Fehler: ' + (data.error || 'Unbekannt'));
     }
@@ -512,6 +511,15 @@ function importJSON(input) {
   };
   reader.readAsText(file);
   input.value = '';
+}
+
+function showBerichtLink(url) {
+  var box = document.getElementById('berichtBox');
+  var link = document.getElementById('berichtBoxLink');
+  var name = document.getElementById('berichtBoxName');
+  link.href = url;
+  name.textContent = url.split('/').pop().replace('.html','').replace(/_/g,' ');
+  box.style.display = 'block';
 }
 
 function showToast(msg) {
