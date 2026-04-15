@@ -417,8 +417,12 @@ function resetForm() {
 
 // ---- Render ----
 
+function netto(a) {
+  return a.kategorie==='Immobilien' ? a.wert - (a.restschuld||0) : a.wert;
+}
+
 function renderAssets() {
-  var total = vermoegenswerte.reduce(function(s,a){return s+a.wert;},0);
+  var total = vermoegenswerte.reduce(function(s,a){return s+netto(a);},0);
   document.getElementById('statGesamt').textContent  = formatEur(total);
   document.getElementById('statAnzahl').textContent  = vermoegenswerte.length;
   document.getElementById('headerMeta').textContent  =
@@ -427,7 +431,7 @@ function renderAssets() {
 
   // Kategorie-Breakdown
   var breakdown = {};
-  vermoegenswerte.forEach(function(a){ breakdown[a.kategorie]=(breakdown[a.kategorie]||0)+a.wert; });
+  vermoegenswerte.forEach(function(a){ breakdown[a.kategorie]=(breakdown[a.kategorie]||0)+netto(a); });
   var bEl = document.getElementById('katBreakdown');
   bEl.innerHTML = Object.keys(breakdown).map(function(k) {
     var col = KAT_COLORS[k]||'#888';
@@ -443,14 +447,16 @@ function renderAssets() {
     list.innerHTML='<div class="empty-state"><div class="empty-icon">&#127968;</div>Noch keine Verm\u00f6genswerte eingetragen</div>';
     return;
   }
-  var sorted = vermoegenswerte.slice().sort(function(a,b){return b.wert-a.wert;});
+  var sorted = vermoegenswerte.slice().sort(function(a,b){return netto(b)-netto(a);});
   list.innerHTML = sorted.map(function(a) {
     var col  = KAT_COLORS[a.kategorie]||'#888';
-    var pct  = total>0 ? (a.wert/total*100).toFixed(1) : '0';
+    var nw   = netto(a);
+    var pct  = total>0 ? (nw/total*100).toFixed(1) : '0';
     var detail = '';
     if (a.kategorie==='Immobilien') {
       var badges = '';
-      if (a.restschuld) badges += '<div class="immo-badge">Restschuld <span>'+formatEur(a.restschuld)+'</span></div>';
+      if (a.restschuld) badges += '<div class="immo-badge">Verkehrswert <span>'+formatEur(a.wert)+'</span></div>'+
+                                  '<div class="immo-badge">Restschuld <span>\u2212'+formatEur(a.restschuld)+'</span></div>';
       if (a.rate)       badges += '<div class="immo-badge">Rate <span>'+formatEur(a.rate)+'/Monat</span></div>';
       if (a.tilgung)    badges += '<div class="immo-badge">Tilgung <span>'+formatEur(a.tilgung)+'/Monat</span></div>';
       if (a.miete)      badges += '<div class="immo-badge">Miete <span>'+formatEur(a.miete)+'/Monat</span></div>';
@@ -468,7 +474,7 @@ function renderAssets() {
       '<button class="btn-edit"   onclick="editAsset('  +a.id+')">&#9998;</button>'+
       '<div class="asset-top">'+
         '<div class="asset-name">'+escHtml(a.name)+'</div>'+
-        '<div class="asset-wert" style="color:'+col+'">'+formatEur(a.wert)+'</div>'+
+        '<div class="asset-wert" style="color:'+col+'">'+formatEur(nw)+'</div>'+
       '</div>'+
       detail+
       '<div class="asset-meta" style="margin-top:6px">'+
