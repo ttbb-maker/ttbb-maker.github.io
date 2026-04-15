@@ -1,7 +1,8 @@
 <?php
 // --- Konfiguration ---
-define('API_KEY',   'fin_k8mL4qSy6vNw');
-define('DATA_FILE', __DIR__ . '/finanzen.json');
+define('API_KEY',        'fin_k8mL4qSy6vNw');
+define('BUCHUNGEN_FILE', __DIR__ . '/finanzen.json');
+define('VERMOEGEN_FILE', __DIR__ . '/finanzen-vermoegen.json');
 
 // CORS-Header
 header('Access-Control-Allow-Origin: https://ttbb-maker.github.io');
@@ -22,16 +23,19 @@ if ($key !== API_KEY) {
     exit;
 }
 
-// GET: Alle Buchungen zurückgeben
+// GET: Buchungen + Vermögenswerte zurückgeben
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $buchungen = file_exists(DATA_FILE)
-        ? json_decode(file_get_contents(DATA_FILE), true) ?? []
+    $buchungen       = file_exists(BUCHUNGEN_FILE)
+        ? json_decode(file_get_contents(BUCHUNGEN_FILE), true) ?? []
         : [];
-    echo json_encode($buchungen);
+    $vermoegenswerte = file_exists(VERMOEGEN_FILE)
+        ? json_decode(file_get_contents(VERMOEGEN_FILE), true) ?? []
+        : [];
+    echo json_encode(['buchungen' => $buchungen, 'vermoegenswerte' => $vermoegenswerte]);
     exit;
 }
 
-// POST: Buchungen speichern (komplettes Array)
+// POST: Daten speichern
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $body = file_get_contents('php://input');
     $data = json_decode($body, true);
@@ -42,12 +46,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (file_put_contents(DATA_FILE, json_encode($data)) === false) {
+    // Neues Format: { buchungen: [...], vermoegenswerte: [...] }
+    if (isset($data['buchungen']) || isset($data['vermoegenswerte'])) {
+        if (isset($data['buchungen'])) {
+            file_put_contents(BUCHUNGEN_FILE, json_encode($data['buchungen']));
+        }
+        if (isset($data['vermoegenswerte'])) {
+            file_put_contents(VERMOEGEN_FILE, json_encode($data['vermoegenswerte']));
+        }
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
+    // Altes Format (nur Buchungen als Array) – Rückwärtskompatibilität
+    if (file_put_contents(BUCHUNGEN_FILE, json_encode($data)) === false) {
         http_response_code(500);
         echo json_encode(['error' => 'Datei konnte nicht gespeichert werden']);
         exit;
     }
-
     echo json_encode(['ok' => true]);
     exit;
 }
