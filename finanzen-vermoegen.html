@@ -49,6 +49,12 @@
   .btn-kurs:active { background:var(--accent2);color:#0e0f11; }
   .aktien-fields { display:none; }
   .aktien-fields.open { display:block; }
+  .immo-fields { display:none; }
+  .immo-fields.open { display:block; }
+  .asset-addr { font-size:12px;color:var(--muted);margin-bottom:6px; }
+  .immo-badges { display:flex;gap:6px;flex-wrap:wrap;margin-top:4px; }
+  .immo-badge { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--muted); }
+  .immo-badge span { color:var(--text);font-weight:600; }
 
   .list-header { display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;gap:8px; }
   .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1; }
@@ -124,6 +130,34 @@
   <div class="field">
     <label>Bezeichnung</label>
     <input type="text" id="fName" placeholder="z.B. Wohnung M&uuml;nchen, Gold 50g, Apple ...">
+  </div>
+
+  <!-- Nur f&uuml;r Immobilien -->
+  <div class="immo-fields" id="immoFields">
+    <div class="field">
+      <label>Adresse</label>
+      <input type="text" id="fAdresse" placeholder="Stra&szlig;e, PLZ Ort">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Restschuld (&euro;)</label>
+        <input type="number" id="fRestschuld" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Rate / Monat (&euro;)</label>
+        <input type="number" id="fRate" placeholder="0.00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Tilgung / Monat (&euro;)</label>
+        <input type="number" id="fTilgung" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Mieteinnahmen / Monat (&euro;)</label>
+        <input type="number" id="fMiete" placeholder="0.00" min="0" step="0.01">
+      </div>
+    </div>
   </div>
 
   <!-- Nur f&uuml;r Aktien -->
@@ -245,6 +279,7 @@ function selectKat(el) {
   currentKat = el.dataset.kat;
   document.querySelectorAll('#katTags .tag').forEach(function(t){t.classList.remove('active');});
   el.classList.add('active');
+  document.getElementById('immoFields').classList.toggle('open',   currentKat==='Immobilien');
   document.getElementById('aktienFields').classList.toggle('open', currentKat==='Aktien');
   document.getElementById('wertLabel').textContent =
     currentKat==='Aktien' ? 'Gesamtwert (\u20ac, berechnet)' : 'Aktueller Wert (\u20ac)';
@@ -252,6 +287,13 @@ function selectKat(el) {
     document.getElementById('fKurs').value   = '';
     document.getElementById('fAnzahl').value = '';
     document.getElementById('fTicker').value = '';
+  }
+  if (currentKat !== 'Immobilien') {
+    document.getElementById('fAdresse').value    = '';
+    document.getElementById('fRestschuld').value = '';
+    document.getElementById('fRate').value       = '';
+    document.getElementById('fTilgung').value    = '';
+    document.getElementById('fMiete').value      = '';
   }
 }
 
@@ -289,6 +331,13 @@ function addAsset() {
   var wert = parseFloat(document.getElementById('fWert').value);
   if (!name||!wert) { showToast('Bitte Bezeichnung und Wert eingeben!'); return; }
   var obj = {id: editId!==null ? editId : Date.now(), name:name, kategorie:currentKat, wert:wert};
+  if (currentKat==='Immobilien') {
+    obj.adresse    = document.getElementById('fAdresse').value.trim() || null;
+    obj.restschuld = parseFloat(document.getElementById('fRestschuld').value) || null;
+    obj.rate       = parseFloat(document.getElementById('fRate').value)       || null;
+    obj.tilgung    = parseFloat(document.getElementById('fTilgung').value)    || null;
+    obj.miete      = parseFloat(document.getElementById('fMiete').value)      || null;
+  }
   if (currentKat==='Aktien') {
     obj.ticker = document.getElementById('fTicker').value.trim().toUpperCase();
     obj.anzahl = parseFloat(document.getElementById('fAnzahl').value)||null;
@@ -312,8 +361,16 @@ function editAsset(id) {
   document.getElementById('fName').value = a.name;
   document.getElementById('fWert').value = a.wert;
   document.querySelectorAll('#katTags .tag').forEach(function(t){t.classList.toggle('active',t.dataset.kat===a.kategorie);});
+  document.getElementById('immoFields').classList.toggle('open',   a.kategorie==='Immobilien');
   document.getElementById('aktienFields').classList.toggle('open', a.kategorie==='Aktien');
   document.getElementById('wertLabel').textContent = a.kategorie==='Aktien' ? 'Gesamtwert (\u20ac, berechnet)' : 'Aktueller Wert (\u20ac)';
+  if (a.kategorie==='Immobilien') {
+    document.getElementById('fAdresse').value    = a.adresse    ||'';
+    document.getElementById('fRestschuld').value = a.restschuld ||'';
+    document.getElementById('fRate').value       = a.rate       ||'';
+    document.getElementById('fTilgung').value    = a.tilgung    ||'';
+    document.getElementById('fMiete').value      = a.miete      ||'';
+  }
   if (a.kategorie==='Aktien') {
     document.getElementById('fTicker').value = a.ticker||'';
     document.getElementById('fAnzahl').value = a.anzahl||'';
@@ -348,6 +405,12 @@ function resetForm() {
   document.getElementById('fKurs').value  ='';
   currentKat='Immobilien';
   document.querySelectorAll('#katTags .tag').forEach(function(t){t.classList.toggle('active',t.dataset.kat==='Immobilien');});
+  document.getElementById('fAdresse').value    = '';
+  document.getElementById('fRestschuld').value = '';
+  document.getElementById('fRate').value       = '';
+  document.getElementById('fTilgung').value    = '';
+  document.getElementById('fMiete').value      = '';
+  document.getElementById('immoFields').classList.remove('open');
   document.getElementById('aktienFields').classList.remove('open');
   document.getElementById('wertLabel').textContent='Aktueller Wert (\u20ac)';
 }
@@ -385,8 +448,17 @@ function renderAssets() {
     var col  = KAT_COLORS[a.kategorie]||'#888';
     var pct  = total>0 ? (a.wert/total*100).toFixed(1) : '0';
     var detail = '';
+    if (a.kategorie==='Immobilien') {
+      var badges = '';
+      if (a.restschuld) badges += '<div class="immo-badge">Restschuld <span>'+formatEur(a.restschuld)+'</span></div>';
+      if (a.rate)       badges += '<div class="immo-badge">Rate <span>'+formatEur(a.rate)+'/Monat</span></div>';
+      if (a.tilgung)    badges += '<div class="immo-badge">Tilgung <span>'+formatEur(a.tilgung)+'/Monat</span></div>';
+      if (a.miete)      badges += '<div class="immo-badge">Miete <span>'+formatEur(a.miete)+'/Monat</span></div>';
+      detail = (a.adresse ? '<div class="asset-addr">&#128205; '+escHtml(a.adresse)+'</div>' : '') +
+               (badges ? '<div class="immo-badges">'+badges+'</div>' : '');
+    }
     if (a.kategorie==='Aktien'&&a.ticker) {
-      detail = ' <div class="asset-detail">'+escHtml(a.ticker)+
+      detail = '<div class="asset-detail">'+escHtml(a.ticker)+
         (a.anzahl?' \u00b7 '+a.anzahl+' St\u00fcck':'')+
         (a.kurs  ?' \u00b7 '+formatEur(a.kurs)+'/Stk':'')+
       '</div>';
@@ -398,10 +470,10 @@ function renderAssets() {
         '<div class="asset-name">'+escHtml(a.name)+'</div>'+
         '<div class="asset-wert" style="color:'+col+'">'+formatEur(a.wert)+'</div>'+
       '</div>'+
-      '<div class="asset-meta">'+
+      detail+
+      '<div class="asset-meta" style="margin-top:6px">'+
         '<div class="asset-kat" style="color:'+col+';border-color:'+col+'44">'+escHtml(a.kategorie)+'</div>'+
         '<div class="asset-detail">'+pct+'% des Verm\u00f6gens</div>'+
-        detail+
       '</div>'+
     '</div>';
   }).join('');
@@ -415,6 +487,9 @@ function showToast(msg) {
   var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2500);
 }
+
+// Show Immobilien fields on load (default category)
+document.getElementById('immoFields').classList.add('open');
 
 loadData();
 </script>
