@@ -168,6 +168,8 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
   <div class="header-row">
     <div><h2>Dashboard</h2><p class="subtitle" style="margin-bottom:0">Portfolio Übersicht</p></div>
     <button class="btn btn-ghost btn-sm" onclick="addSnapshot()">📸 Snapshot speichern</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportData()">📤 Sichern</button>
+    <label class="btn btn-ghost btn-sm" style="cursor:pointer">📥 Importieren<input type="file" accept=".json" onchange="importData(this)" style="display:none"></label>
   </div>
   <div class="kpi-row" id="dash-kpis"></div>
   <div class="card" style="margin-bottom:14px">
@@ -716,6 +718,31 @@ function renderDashboard(){
   ]);
   renderWealthChart();renderDonut();renderProjChart();
   document.getElementById('dash-cats').innerHTML=['immobilien','aktien','edelmetalle','kredite','bauspar'].map(c=>`<div class="cat-card" onclick="switchTo('${c}')"><div class="icon">${ICONS[c]}</div><div class="cat-name">${LABELS[c]}</div><div class="cat-val">${fmt(catGross(c))}</div><div class="cat-count">${data[c].length} Eintrag${data[c].length!==1?'e':''}</div></div>`).join('');
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='finanzuebersicht_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const imported=JSON.parse(e.target.result);
+      if(!imported||typeof imported!=='object'){alert('Ungültige Datei.');return}
+      if(!confirm('Alle aktuellen Daten werden überschrieben. Fortfahren?'))return;
+      data=imported;
+      data.immobilien=(data.immobilien||[]).map(x=>({hypotheken:[],mieteinnahmen:[],...x}));
+      data.snapshots=data.snapshots||[];
+      data.edelmetalle=migrateEdel(data.edelmetalle||[]);
+      save();renderDashboard();updateSidebar();
+      alert('✓ Import erfolgreich — Daten wurden auf Synology gespeichert.');
+    }catch(err){alert('Fehler beim Import: '+err.message);}
+  };
+  reader.readAsText(file);
+  input.value='';
 }
 function addSnapshot(){
   const label=prompt('Bezeichnung (optional):','');if(label===null)return;
