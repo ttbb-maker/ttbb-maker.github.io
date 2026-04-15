@@ -3,58 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Finanzen</title>
+<title>Finanzen &ndash; Buchungen</title>
 <style>
-  :root {
-    --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;
-    --accent:#f5c547;--accent2:#47b8f5;
-    --text:#f0f0ed;--muted:#6b7080;
-    --danger:#f54747;--income:#47f57a;--warn:#f5a547;
-    --radius:14px;
-    --cat-immo:#a78bfa;--cat-edel:#f5c547;--cat-aktien:#47b8f5;
-    --cat-bauspar:#47f57a;--cat-p2p:#f5a547;
-  }
+  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#f5c547;--accent2:#47b8f5;--text:#f0f0ed;--muted:#6b7080;--danger:#f54747;--income:#47f57a;--radius:14px; }
   * { box-sizing:border-box;margin:0;padding:0; }
-  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 100px 0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 90px 0; }
 
-  /* Header */
   .header { padding:28px 20px 0; }
   .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
   .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
   .header-meta { font-size:11px;color:var(--muted);margin-top:6px; }
 
-  /* Stats */
   .stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:20px 20px 0; }
-  .stats-wide { display:grid;grid-template-columns:2fr 1fr;gap:10px;padding:10px 20px 0; }
   .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center; }
-  .stat-box.highlight { border-color:rgba(245,197,71,.25);background:linear-gradient(135deg,#1e2128,#221e10); }
   .stat-value { font-size:20px;font-weight:700;color:var(--accent);line-height:1; }
   .stat-value.income   { color:var(--income); }
   .stat-value.expense  { color:var(--danger); }
   .stat-value.positive { color:var(--income); }
   .stat-value.negative { color:var(--danger); }
-  .stat-value.big { font-size:24px; }
   .stat-label { font-size:9px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.1em; }
 
-  /* Section divider */
-  .section-label { font-size:10px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;padding:24px 20px 0;display:flex;align-items:center;gap:10px; }
-  .section-label::after { content:'';flex:1;height:1px;background:var(--border); }
-
-  /* Form */
-  .form-card { margin:12px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .3s; }
+  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .3s; }
   .form-card.edit-mode { border-color:var(--accent2); }
   .form-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
   .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
   .form-card.edit-mode .form-title { color:var(--accent2); }
   .form-card.edit-mode .form-title::before { background:var(--accent2); }
   .field-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
-  .field-row3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px; }
   .field { margin-bottom:10px; }
   label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:5px; }
   input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none; }
   input:focus { border-color:var(--accent); }
   input::placeholder { color:var(--muted); }
-  input[readonly] { color:var(--muted);cursor:default; }
   .tags { display:flex;flex-wrap:wrap;gap:6px;margin-top:4px; }
   .tag { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s; }
   .tag.active { background:var(--accent);border-color:var(--accent);color:#0e0f11;font-weight:700; }
@@ -63,12 +43,7 @@
   .btn-add { width:100%;margin-top:14px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer; }
   .btn-add:active { opacity:.8; }
   .btn-cancel { width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;cursor:pointer; }
-  .btn-kurs { background:var(--surface);border:1px dashed var(--accent2);color:var(--accent2);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap;width:100%;margin-top:2px;transition:all .2s; }
-  .btn-kurs:active { background:var(--accent2);color:#0e0f11; }
-  .aktien-fields { display:none; }
-  .aktien-fields.open { display:block; }
 
-  /* List header */
   .list-header { display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;gap:8px; }
   .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1; }
   .sync-dot { width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0; }
@@ -78,12 +53,10 @@
   .monat-select { background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;padding:7px 10px;outline:none;cursor:pointer;width:auto; }
   .monat-select:focus { border-color:var(--accent); }
 
-  /* Data bar */
   .data-bar { display:flex;gap:8px;padding:12px 20px 0;justify-content:flex-end; }
   .btn-data { background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:11px;cursor:pointer; }
   .btn-data:hover { border-color:var(--accent);color:var(--accent); }
 
-  /* Buchungen */
   .buchung-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
   .buchung-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;border-left-width:3px; }
   .buchung-card.einnahme { border-left-color:var(--income); }
@@ -95,38 +68,23 @@
   .buchung-betrag.ausgabe  { color:var(--danger); }
   .buchung-meta { display:flex;gap:6px;align-items:center;flex-wrap:wrap; }
   .buchung-date { font-size:11px;color:var(--muted); }
-  .buchung-kat { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--muted); }
-
-  /* Asset cards */
-  .asset-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
-  .asset-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;border-left-width:3px; }
-  .asset-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px; }
-  .asset-name { font-size:15px;font-weight:700;color:var(--text);line-height:1.3;flex:1;padding-right:80px; }
-  .asset-wert { font-size:18px;font-weight:700;color:var(--accent);white-space:nowrap; }
-  .asset-meta { display:flex;gap:6px;align-items:center;flex-wrap:wrap; }
-  .asset-kat { border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--muted); }
-  .asset-detail { font-size:11px;color:var(--muted); }
-
-  /* Category breakdown */
-  .kat-breakdown { padding:10px 20px 0;display:flex;flex-wrap:wrap;gap:6px; }
-  .kat-pill { border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;border:1px solid;display:flex;align-items:center;gap:5px; }
-  .kat-pill-val { font-size:10px;opacity:.85; }
-
-  /* Shared edit/delete */
+  .buchung-kat  { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--muted); }
   .btn-delete,.btn-edit { position:absolute;top:10px;display:none;border:none;border-radius:6px;width:26px;height:26px;font-size:14px;cursor:pointer;align-items:center;justify-content:center; }
   .btn-delete { right:10px;background:var(--danger);color:white;font-size:16px; }
   .btn-edit   { right:42px;background:var(--accent2);color:#0e0f11; }
   .buchung-card:hover .btn-delete,.buchung-card:active .btn-delete,
-  .buchung-card:hover .btn-edit,  .buchung-card:active .btn-edit,
-  .asset-card:hover .btn-delete,  .asset-card:active .btn-delete,
-  .asset-card:hover .btn-edit,    .asset-card:active .btn-edit { display:flex; }
+  .buchung-card:hover .btn-edit,  .buchung-card:active .btn-edit { display:flex; }
 
-  /* Empty state */
   .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
   .empty-icon  { font-size:40px;margin-bottom:12px;opacity:.4; }
 
-  /* Toast */
-  .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
+  /* Bottom Tab Nav */
+  .tab-nav { position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100; }
+  .tab-item { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 14px;text-decoration:none;color:var(--muted);font-size:10px;letter-spacing:.05em;text-transform:uppercase;gap:4px;transition:color .15s; }
+  .tab-item.active { color:var(--accent); }
+  .tab-icon { font-size:22px;line-height:1; }
+
+  .toast { position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
   .toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
 </style>
 </head>
@@ -134,11 +92,10 @@
 
 <div class="header">
   <div class="header-label">Finanzen</div>
-  <h1>Finanz&uuml;bersicht</h1>
+  <h1>Buchungen</h1>
   <div class="header-meta" id="headerMeta">Noch keine Buchungen</div>
 </div>
 
-<!-- Monatliche Statistik -->
 <div class="stats">
   <div class="stat-box">
     <div class="stat-value income" id="statEinnahmen">0 &#8364;</div>
@@ -153,21 +110,6 @@
     <div class="stat-label">Saldo</div>
   </div>
 </div>
-
-<!-- Gesamtverm&ouml;gen -->
-<div class="stats-wide">
-  <div class="stat-box highlight">
-    <div class="stat-value big" id="statGesamtvermoegen">0 &#8364;</div>
-    <div class="stat-label">Gesamtverm&ouml;gen</div>
-  </div>
-  <div class="stat-box">
-    <div class="stat-value" id="statAnzahlAssets">0</div>
-    <div class="stat-label">Positionen</div>
-  </div>
-</div>
-
-<!-- ===== BUCHUNGEN ===== -->
-<div class="section-label">Buchungen</div>
 
 <div class="form-card" id="formCard">
   <div class="form-title" id="formTitle">Buchung eintragen</div>
@@ -221,71 +163,15 @@
   <div class="empty-state"><div class="empty-icon">&#128176;</div>Noch keine Buchungen eingetragen</div>
 </div>
 
-<!-- ===== VERMÖGENSWERTE ===== -->
-<div class="section-label">Verm&ouml;genswerte</div>
-
-<div class="form-card" id="assetFormCard">
-  <div class="form-title" id="assetFormTitle">Asset eintragen</div>
-
-  <div class="field">
-    <label>Kategorie</label>
-    <div class="tags" id="assetKatTags">
-      <div class="tag active" data-kat="Immobilien"    onclick="selectAssetKat(this)">Immobilien</div>
-      <div class="tag"        data-kat="Edelmetalle"   onclick="selectAssetKat(this)">Edelmetalle</div>
-      <div class="tag"        data-kat="Aktien"        onclick="selectAssetKat(this)">Aktien</div>
-      <div class="tag"        data-kat="Bausparvertrag" onclick="selectAssetKat(this)">Bausparvertrag</div>
-      <div class="tag"        data-kat="P2P Kredite"   onclick="selectAssetKat(this)">P2P Kredite</div>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Bezeichnung</label>
-    <input type="text" id="vName" placeholder="z.B. Wohnung M&uuml;nchen, Gold 50g, Apple...">
-  </div>
-
-  <!-- Nur f&uuml;r Aktien -->
-  <div class="aktien-fields" id="aktienFields">
-    <div class="field-row">
-      <div class="field">
-        <label>Ticker-Symbol</label>
-        <input type="text" id="vTicker" placeholder="z.B. AAPL, SAP.DE">
-      </div>
-      <div class="field">
-        <label>Anzahl Aktien</label>
-        <input type="number" id="vAnzahl" placeholder="z.B. 10" min="0" step="any" oninput="calcAktienWert()">
-      </div>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label>Kurs pro Aktie</label>
-        <input type="number" id="vKurs" placeholder="wird abgerufen" min="0" step="any" oninput="calcAktienWert()">
-      </div>
-      <div class="field">
-        <label>&nbsp;</label>
-        <button class="btn-kurs" id="btnFetchKurs" onclick="fetchKurs()">&#8635; Kurs abrufen</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="field">
-    <label id="wertLabel">Aktueller Wert (&euro;)</label>
-    <input type="number" id="vWert" placeholder="0.00" min="0" step="0.01">
-  </div>
-
-  <button class="btn-add" id="assetBtnAdd" onclick="addAsset()">+ Asset hinzuf&uuml;gen</button>
-  <button class="btn-cancel" id="assetBtnCancel" onclick="cancelEditAsset()" style="display:none;">Abbrechen</button>
-</div>
-
-<div class="list-header">
-  <div class="list-title">Meine Assets</div>
-  <button class="btn-refresh" onclick="renderAssets()" title="Aktualisieren">&#8635;</button>
-</div>
-
-<div class="kat-breakdown" id="katBreakdown"></div>
-
-<div class="asset-list" id="assetList">
-  <div class="empty-state"><div class="empty-icon">&#127968;</div>Noch keine Verm&ouml;genswerte eingetragen</div>
-</div>
+<!-- Bottom Navigation -->
+<nav class="tab-nav">
+  <a class="tab-item active" href="finanzen.html">
+    <span class="tab-icon">&#128176;</span>Buchungen
+  </a>
+  <a class="tab-item" href="finanzen-vermoegen.html">
+    <span class="tab-icon">&#128200;</span>Verm&ouml;gen
+  </a>
+</nav>
 
 <div class="toast" id="toast"></div>
 
@@ -298,79 +184,55 @@ var KATS = {
   ausgabe:  ['Wohnen', 'Lebensmittel', 'Auto', 'Versicherung', 'Unterhaltung', 'Sonstiges']
 };
 
-var KAT_COLORS = {
-  'Immobilien':    '#a78bfa',
-  'Edelmetalle':   '#f5c547',
-  'Aktien':        '#47b8f5',
-  'Bausparvertrag':'#47f57a',
-  'P2P Kredite':   '#f5a547'
-};
-
-var buchungen      = [];
-var vermoegenswerte = [];
-var editId         = null;
-var editAssetId    = null;
-var currentTyp     = 'ausgabe';
-var currentAssetKat = 'Immobilien';
+var buchungen  = [];
+var editId     = null;
+var currentTyp = 'ausgabe';
 
 document.getElementById('fDatum').value = new Date().toISOString().split('T')[0];
 var _now = new Date();
 document.getElementById('monatSelect').value = _now.getFullYear() + '-' + String(_now.getMonth()+1).padStart(2,'0');
 
-// ========== API / Storage ==========
+// ---- API / Storage ----
 
 async function loadData() {
-  var localB = JSON.parse(localStorage.getItem('finanzen')          || '[]');
-  var localV = JSON.parse(localStorage.getItem('finanzen_vermoegen') || '[]');
+  var local = JSON.parse(localStorage.getItem('finanzen') || '[]');
   try {
     var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}});
     if (r.ok) {
       var remote = await r.json();
-      if (Array.isArray(remote)) {
-        buchungen       = remote.length > 0 ? remote : localB;
-        vermoegenswerte = localV;
-      } else {
-        buchungen       = (remote.buchungen      && remote.buchungen.length)      ? remote.buchungen      : localB;
-        vermoegenswerte = (remote.vermoegenswerte && remote.vermoegenswerte.length) ? remote.vermoegenswerte : localV;
-      }
+      var rb = Array.isArray(remote) ? remote : (remote.buchungen || []);
+      buchungen = rb.length > 0 ? rb : local;
       setSyncDot(true);
     } else {
-      buchungen = localB; vermoegenswerte = localV;
-      setSyncDot(false);
+      buchungen = local; setSyncDot(false);
     }
   } catch(e) {
-    buchungen = localB; vermoegenswerte = localV;
-    setSyncDot(false);
+    buchungen = local; setSyncDot(false);
     showToast('Offline \u2013 lokale Daten geladen');
   }
   render();
-  renderAssets();
 }
 
 async function save() {
-  localStorage.setItem('finanzen',           JSON.stringify(buchungen));
-  localStorage.setItem('finanzen_vermoegen', JSON.stringify(vermoegenswerte));
+  localStorage.setItem('finanzen', JSON.stringify(buchungen));
+  var vermoegenswerte = JSON.parse(localStorage.getItem('finanzen_vermoegen') || '[]');
   try {
     var r = await fetch(API_URL, {
-      method: 'POST',
-      headers: {'X-API-Key': API_KEY, 'Content-Type': 'application/json'},
-      body: JSON.stringify({buchungen: buchungen, vermoegenswerte: vermoegenswerte})
+      method:'POST',
+      headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({buchungen:buchungen, vermoegenswerte:vermoegenswerte})
     });
-    setSyncDot(r.ok);
-    return r.ok;
-  } catch(e) {
-    setSyncDot(false);
-    return false;
-  }
+    setSyncDot(r.ok); return r.ok;
+  } catch(e) { setSyncDot(false); return false; }
 }
 
 function setSyncDot(ok) {
   var d = document.getElementById('syncDot');
-  d.className = 'sync-dot ' + (ok ? 'ok' : 'err');
+  d.className = 'sync-dot ' + (ok?'ok':'err');
   d.title = ok ? 'Synology: gespeichert' : 'Nur lokal gespeichert';
 }
 
-// ========== Buchungen Form ==========
+// ---- Form ----
 
 function selectTyp(el, typ) {
   currentTyp = typ;
@@ -386,7 +248,7 @@ function renderKatTags(sel) {
   c.innerHTML = '';
   kats.forEach(function(k) {
     var t = document.createElement('div');
-    t.className = 'tag' + (k===def ? ' active' : '');
+    t.className = 'tag' + (k===def?' active':'');
     t.textContent = k;
     t.onclick = function(){ selectKat(this); };
     c.appendChild(t);
@@ -407,17 +269,15 @@ function addBuchung() {
   var betrag = parseFloat(document.getElementById('fBetrag').value);
   var datum  = document.getElementById('fDatum').value;
   var beschreibung = document.getElementById('fBeschreibung').value.trim();
-  var kat    = getKat();
-  if (!betrag || !datum || !beschreibung) { showToast('Bitte alle Felder ausf\u00fcllen!'); return; }
+  var kat = getKat();
+  if (!betrag||!datum||!beschreibung) { showToast('Bitte alle Felder ausf\u00fcllen!'); return; }
   if (editId !== null) {
     var idx = buchungen.findIndex(function(b){return b.id===editId;});
-    if (idx !== -1) buchungen[idx] = {id:editId,datum:datum,betrag:betrag,beschreibung:beschreibung,typ:currentTyp,kategorie:kat};
-    showToast('Buchung aktualisiert!');
-    cancelEdit();
+    if (idx!==-1) buchungen[idx]={id:editId,datum:datum,betrag:betrag,beschreibung:beschreibung,typ:currentTyp,kategorie:kat};
+    showToast('Buchung aktualisiert!'); cancelEdit();
   } else {
     buchungen.unshift({id:Date.now(),datum:datum,betrag:betrag,beschreibung:beschreibung,typ:currentTyp,kategorie:kat});
-    showToast('Buchung gespeichert!');
-    resetForm();
+    showToast('Buchung gespeichert!'); resetForm();
   }
   save(); render();
 }
@@ -425,57 +285,56 @@ function addBuchung() {
 function editBuchung(id) {
   var b = buchungen.find(function(b){return b.id===id;});
   if (!b) return;
-  editId = id; currentTyp = b.typ;
-  document.getElementById('fBetrag').value = b.betrag;
-  document.getElementById('fDatum').value  = b.datum;
-  document.getElementById('fBeschreibung').value = b.beschreibung;
+  editId=id; currentTyp=b.typ;
+  document.getElementById('fBetrag').value=b.betrag;
+  document.getElementById('fDatum').value=b.datum;
+  document.getElementById('fBeschreibung').value=b.beschreibung;
   document.querySelectorAll('#typTags .tag').forEach(function(t){t.classList.toggle('active',t.dataset.typ===b.typ);});
   renderKatTags(b.kategorie);
   document.getElementById('formCard').classList.add('edit-mode');
-  document.getElementById('formTitle').textContent = 'Buchung bearbeiten';
-  document.getElementById('btnAdd').textContent    = 'Speichern';
-  document.getElementById('btnCancel').style.display = 'block';
+  document.getElementById('formTitle').textContent='Buchung bearbeiten';
+  document.getElementById('btnAdd').textContent='Speichern';
+  document.getElementById('btnCancel').style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function deleteBuchung(id) {
-  buchungen = buchungen.filter(function(b){return b.id!==id;});
-  save(); render();
-  showToast('Buchung gel\u00f6scht');
+  buchungen=buchungen.filter(function(b){return b.id!==id;});
+  save(); render(); showToast('Buchung gel\u00f6scht');
 }
 
 function cancelEdit() {
-  editId = null;
+  editId=null;
   document.getElementById('formCard').classList.remove('edit-mode');
-  document.getElementById('formTitle').textContent = 'Buchung eintragen';
-  document.getElementById('btnAdd').textContent    = '+ Buchung hinzuf\u00fcgen';
-  document.getElementById('btnCancel').style.display = 'none';
+  document.getElementById('formTitle').textContent='Buchung eintragen';
+  document.getElementById('btnAdd').textContent='+ Buchung hinzuf\u00fcgen';
+  document.getElementById('btnCancel').style.display='none';
   resetForm();
 }
 
 function resetForm() {
-  document.getElementById('fBetrag').value = '';
-  document.getElementById('fBeschreibung').value = '';
-  document.getElementById('fDatum').value = new Date().toISOString().split('T')[0];
-  currentTyp = 'ausgabe';
+  document.getElementById('fBetrag').value='';
+  document.getElementById('fBeschreibung').value='';
+  document.getElementById('fDatum').value=new Date().toISOString().split('T')[0];
+  currentTyp='ausgabe';
   document.querySelectorAll('#typTags .tag').forEach(function(t){t.classList.toggle('active',t.dataset.typ==='ausgabe');});
   renderKatTags(null);
 }
 
-// ========== Buchungen Render ==========
+// ---- Render ----
 
 function render() {
   var monat    = document.getElementById('monatSelect').value;
   var filtered = monat ? buchungen.filter(function(b){return b.datum&&b.datum.startsWith(monat);}) : buchungen;
   var einnahmen = filtered.filter(function(b){return b.typ==='einnahme';}).reduce(function(s,b){return s+b.betrag;},0);
   var ausgaben  = filtered.filter(function(b){return b.typ==='ausgabe'; }).reduce(function(s,b){return s+b.betrag;},0);
-  var saldo     = einnahmen - ausgaben;
+  var saldo = einnahmen - ausgaben;
 
   document.getElementById('statEinnahmen').textContent = formatEur(einnahmen);
   document.getElementById('statAusgaben').textContent  = formatEur(ausgaben);
   var sEl = document.getElementById('statSaldo');
-  sEl.textContent  = (saldo>=0?'+':'-') + formatEur(Math.abs(saldo));
-  sEl.className    = 'stat-value ' + (saldo>=0?'positive':'negative');
+  sEl.textContent = (saldo>=0?'+':'-') + formatEur(Math.abs(saldo));
+  sEl.className   = 'stat-value ' + (saldo>=0?'positive':'negative');
 
   var label = monat ? formatMonat(monat) : 'Gesamt';
   document.getElementById('headerMeta').textContent =
@@ -483,275 +342,71 @@ function render() {
 
   var list = document.getElementById('buchungList');
   if (!filtered.length) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128176;</div>' +
-      (monat ? 'Keine Buchungen f\u00fcr diesen Monat' : 'Noch keine Buchungen eingetragen') + '</div>';
+    list.innerHTML='<div class="empty-state"><div class="empty-icon">&#128176;</div>' +
+      (monat?'Keine Buchungen f\u00fcr diesen Monat':'Noch keine Buchungen eingetragen')+'</div>';
     return;
   }
   var sorted = filtered.slice().sort(function(a,b){return b.datum.localeCompare(a.datum);});
   list.innerHTML = sorted.map(function(b) {
-    var sign = b.typ==='einnahme' ? '+' : '-';
-    return '<div class="buchung-card ' + b.typ + '">' +
+    var sign = b.typ==='einnahme'?'+':'-';
+    return '<div class="buchung-card '+b.typ+'">' +
       '<button class="btn-delete" onclick="deleteBuchung('+b.id+')">&#10005;</button>' +
       '<button class="btn-edit"   onclick="editBuchung('  +b.id+')">&#9998;</button>' +
       '<div class="buchung-top">' +
-        '<div class="buchung-beschreibung">' + escHtml(b.beschreibung) + '</div>' +
-        '<div class="buchung-betrag ' + b.typ + '">' + sign + formatEur(b.betrag) + '</div>' +
+        '<div class="buchung-beschreibung">'+escHtml(b.beschreibung)+'</div>' +
+        '<div class="buchung-betrag '+b.typ+'">'+sign+formatEur(b.betrag)+'</div>' +
       '</div>' +
       '<div class="buchung-meta">' +
-        '<div class="buchung-date">' + formatDate(b.datum) + '</div>' +
-        '<div class="buchung-kat">' + escHtml(b.kategorie) + '</div>' +
+        '<div class="buchung-date">'+formatDate(b.datum)+'</div>' +
+        '<div class="buchung-kat">'+escHtml(b.kategorie)+'</div>' +
       '</div>' +
     '</div>';
   }).join('');
 }
 
-// ========== Asset Form ==========
-
-function selectAssetKat(el) {
-  currentAssetKat = el.dataset.kat;
-  document.querySelectorAll('#assetKatTags .tag').forEach(function(t){t.classList.remove('active');});
-  el.classList.add('active');
-  document.getElementById('aktienFields').classList.toggle('open', currentAssetKat==='Aktien');
-  document.getElementById('wertLabel').textContent =
-    currentAssetKat==='Aktien' ? 'Gesamtwert (\u20ac, berechnet)' : 'Aktueller Wert (\u20ac)';
-  if (currentAssetKat !== 'Aktien') {
-    document.getElementById('vKurs').value   = '';
-    document.getElementById('vAnzahl').value = '';
-    document.getElementById('vTicker').value = '';
-  }
-}
-
-function calcAktienWert() {
-  var kurs   = parseFloat(document.getElementById('vKurs').value)   || 0;
-  var anzahl = parseFloat(document.getElementById('vAnzahl').value) || 0;
-  if (kurs > 0 && anzahl > 0) {
-    document.getElementById('vWert').value = (kurs * anzahl).toFixed(2);
-  }
-}
-
-async function fetchKurs() {
-  var ticker = document.getElementById('vTicker').value.trim().toUpperCase();
-  var anzahl = parseFloat(document.getElementById('vAnzahl').value) || 0;
-  if (!ticker) { showToast('Bitte Ticker-Symbol eingeben (z.B. AAPL, SAP.DE)'); return; }
-  var btn = document.getElementById('btnFetchKurs');
-  btn.disabled = true; btn.textContent = '... l\u00e4dt';
-  try {
-    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ticker) + '?interval=1d&range=1d';
-    var r   = await fetch(url);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    var data   = await r.json();
-    var result = data.chart && data.chart.result && data.chart.result[0];
-    if (!result) throw new Error('Keine Kursdaten');
-    var kurs     = result.meta.regularMarketPrice;
-    var currency = result.meta.currency || 'USD';
-    document.getElementById('vKurs').value = kurs.toFixed(4);
-    if (anzahl > 0) document.getElementById('vWert').value = (kurs * anzahl).toFixed(2);
-    showToast(ticker + ': ' + kurs.toFixed(2) + ' ' + currency + (currency!=='EUR'?' (Kurs in '+currency+')':''));
-  } catch(e) {
-    showToast('Kurs nicht abrufbar \u2013 bitte manuell eingeben');
-  }
-  btn.disabled = false; btn.textContent = '\u21bb Kurs abrufen';
-}
-
-function addAsset() {
-  var name = document.getElementById('vName').value.trim();
-  var wert = parseFloat(document.getElementById('vWert').value);
-  if (!name || !wert) { showToast('Bitte Bezeichnung und Wert eingeben!'); return; }
-  var obj = {
-    id: editAssetId !== null ? editAssetId : Date.now(),
-    name: name,
-    kategorie: currentAssetKat,
-    wert: wert
-  };
-  if (currentAssetKat === 'Aktien') {
-    obj.ticker = document.getElementById('vTicker').value.trim().toUpperCase();
-    obj.anzahl = parseFloat(document.getElementById('vAnzahl').value) || null;
-    obj.kurs   = parseFloat(document.getElementById('vKurs').value)   || null;
-  }
-  if (editAssetId !== null) {
-    var idx = vermoegenswerte.findIndex(function(a){return a.id===editAssetId;});
-    if (idx !== -1) vermoegenswerte[idx] = obj;
-    showToast('Asset aktualisiert!');
-    cancelEditAsset();
-  } else {
-    vermoegenswerte.unshift(obj);
-    showToast('Asset gespeichert!');
-    resetAssetForm();
-  }
-  save(); renderAssets();
-}
-
-function editAsset(id) {
-  var a = vermoegenswerte.find(function(a){return a.id===id;});
-  if (!a) return;
-  editAssetId = id; currentAssetKat = a.kategorie;
-  document.getElementById('vName').value = a.name;
-  document.getElementById('vWert').value = a.wert;
-  document.querySelectorAll('#assetKatTags .tag').forEach(function(t){
-    t.classList.toggle('active', t.dataset.kat===a.kategorie);
-  });
-  document.getElementById('aktienFields').classList.toggle('open', a.kategorie==='Aktien');
-  document.getElementById('wertLabel').textContent =
-    a.kategorie==='Aktien' ? 'Gesamtwert (\u20ac, berechnet)' : 'Aktueller Wert (\u20ac)';
-  if (a.kategorie === 'Aktien') {
-    document.getElementById('vTicker').value = a.ticker || '';
-    document.getElementById('vAnzahl').value = a.anzahl || '';
-    document.getElementById('vKurs').value   = a.kurs   || '';
-  }
-  document.getElementById('assetFormCard').classList.add('edit-mode');
-  document.getElementById('assetFormTitle').textContent  = 'Asset bearbeiten';
-  document.getElementById('assetBtnAdd').textContent     = 'Speichern';
-  document.getElementById('assetBtnCancel').style.display = 'block';
-  document.getElementById('assetFormCard').scrollIntoView({behavior:'smooth'});
-}
-
-function deleteAsset(id) {
-  vermoegenswerte = vermoegenswerte.filter(function(a){return a.id!==id;});
-  save(); renderAssets();
-  showToast('Asset gel\u00f6scht');
-}
-
-function cancelEditAsset() {
-  editAssetId = null;
-  document.getElementById('assetFormCard').classList.remove('edit-mode');
-  document.getElementById('assetFormTitle').textContent   = 'Asset eintragen';
-  document.getElementById('assetBtnAdd').textContent      = '+ Asset hinzuf\u00fcgen';
-  document.getElementById('assetBtnCancel').style.display = 'none';
-  resetAssetForm();
-}
-
-function resetAssetForm() {
-  document.getElementById('vName').value   = '';
-  document.getElementById('vWert').value   = '';
-  document.getElementById('vTicker').value = '';
-  document.getElementById('vAnzahl').value = '';
-  document.getElementById('vKurs').value   = '';
-  currentAssetKat = 'Immobilien';
-  document.querySelectorAll('#assetKatTags .tag').forEach(function(t){
-    t.classList.toggle('active', t.dataset.kat==='Immobilien');
-  });
-  document.getElementById('aktienFields').classList.remove('open');
-  document.getElementById('wertLabel').textContent = 'Aktueller Wert (\u20ac)';
-}
-
-// ========== Asset Render ==========
-
-function renderAssets() {
-  var total = vermoegenswerte.reduce(function(s,a){return s+a.wert;},0);
-  document.getElementById('statGesamtvermoegen').textContent = formatEur(total);
-  document.getElementById('statAnzahlAssets').textContent    = vermoegenswerte.length;
-
-  // Category breakdown
-  var breakdown = {};
-  vermoegenswerte.forEach(function(a){
-    breakdown[a.kategorie] = (breakdown[a.kategorie]||0) + a.wert;
-  });
-  var bEl = document.getElementById('katBreakdown');
-  if (Object.keys(breakdown).length === 0) {
-    bEl.innerHTML = '';
-  } else {
-    bEl.innerHTML = Object.keys(breakdown).map(function(k) {
-      var col  = KAT_COLORS[k] || '#888';
-      var pct  = total > 0 ? Math.round(breakdown[k]/total*100) : 0;
-      return '<div class="kat-pill" style="color:' + col + ';border-color:' + col + '33;background:' + col + '11">' +
-        escHtml(k) + ' <span class="kat-pill-val">' + formatEur(breakdown[k]) + ' \u00b7 ' + pct + '%</span>' +
-      '</div>';
-    }).join('');
-  }
-
-  // Asset list
-  var list = document.getElementById('assetList');
-  if (!vermoegenswerte.length) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#127968;</div>Noch keine Verm\u00f6genswerte eingetragen</div>';
-    return;
-  }
-  var sorted = vermoegenswerte.slice().sort(function(a,b){return b.wert-a.wert;});
-  list.innerHTML = sorted.map(function(a) {
-    var col   = KAT_COLORS[a.kategorie] || '#888';
-    var pct   = total > 0 ? (a.wert/total*100).toFixed(1) : '0';
-    var detail = '';
-    if (a.kategorie==='Aktien' && a.ticker) {
-      detail = '<div class="asset-detail">' + escHtml(a.ticker) +
-        (a.anzahl ? ' \u00b7 ' + a.anzahl + ' St\u00fcck' : '') +
-        (a.kurs   ? ' \u00b7 ' + formatEur(a.kurs) + '/Stk' : '') +
-      '</div>';
-    }
-    return '<div class="asset-card" style="border-left-color:' + col + '">' +
-      '<button class="btn-delete" onclick="deleteAsset(' + a.id + ')">&#10005;</button>' +
-      '<button class="btn-edit"   onclick="editAsset('   + a.id + ')">&#9998;</button>' +
-      '<div class="asset-top">' +
-        '<div class="asset-name">' + escHtml(a.name) + '</div>' +
-        '<div class="asset-wert" style="color:' + col + '">' + formatEur(a.wert) + '</div>' +
-      '</div>' +
-      '<div class="asset-meta">' +
-        '<div class="asset-kat" style="color:' + col + ';border-color:' + col + '44">' + escHtml(a.kategorie) + '</div>' +
-        '<div class="asset-detail">' + pct + '% des Verm\u00f6gens</div>' +
-        detail +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-// ========== Import / Export ==========
+// ---- Import / Export ----
 
 function exportJSON() {
-  var blob = new Blob([JSON.stringify({buchungen:buchungen,vermoegenswerte:vermoegenswerte},null,2)],{type:'application/json'});
+  var v = JSON.parse(localStorage.getItem('finanzen_vermoegen')||'[]');
+  var blob = new Blob([JSON.stringify({buchungen:buchungen,vermoegenswerte:v},null,2)],{type:'application/json'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'finanzen-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.download = 'finanzen-backup-'+new Date().toISOString().split('T')[0]+'.json';
   a.click();
 }
 
 function importJSON(input) {
-  var file = input.files[0];
-  if (!file) return;
+  var file = input.files[0]; if (!file) return;
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
       var data = JSON.parse(e.target.result);
-      if (Array.isArray(data)) {
-        buchungen = data;
-      } else {
-        if (data.buchungen)       buchungen       = data.buchungen;
-        if (data.vermoegenswerte) vermoegenswerte = data.vermoegenswerte;
+      if (Array.isArray(data)) { buchungen=data; }
+      else {
+        if (data.buchungen) buchungen=data.buchungen;
+        if (data.vermoegenswerte) localStorage.setItem('finanzen_vermoegen',JSON.stringify(data.vermoegenswerte));
       }
-      save(); render(); renderAssets();
-      showToast('Import erfolgreich');
-    } catch(err) {
-      showToast('Fehler beim Import: ' + err.message);
-    }
+      save(); render(); showToast('Import erfolgreich');
+    } catch(err) { showToast('Fehler beim Import: '+err.message); }
   };
-  reader.readAsText(file);
-  input.value = '';
+  reader.readAsText(file); input.value='';
 }
 
-// ========== Helpers ==========
+// ---- Helpers ----
 
-function formatEur(val) {
-  return Math.abs(val).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + '\u00a0\u20ac';
-}
-function formatDate(d) {
-  if (!d) return '';
-  var p = d.split('-');
-  return p[2] + '.' + p[1] + '.' + p[0];
-}
+function formatEur(val) { return Math.abs(val).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0\u20ac'; }
+function formatDate(d) { if(!d)return''; var p=d.split('-'); return p[2]+'.'+p[1]+'.'+p[0]; }
 function formatMonat(m) {
-  if (!m) return '';
-  var p = m.split('-');
-  var mn = ['Jan','Feb','Mrz','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-  return mn[parseInt(p[1],10)-1] + ' ' + p[0];
+  if(!m)return''; var p=m.split('-');
+  var mn=['Jan','Feb','Mrz','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  return mn[parseInt(p[1],10)-1]+' '+p[0];
 }
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function showToast(msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2500);
 }
 
-// ========== Init ==========
 renderKatTags(null);
 loadData();
 </script>
