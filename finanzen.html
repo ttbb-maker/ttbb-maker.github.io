@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finanzen</title>
+<style>
+  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#f5c547;--accent2:#47b8f5;--text:#f0f0ed;--muted:#6b7080;--danger:#f54747;--income:#47f57a;--radius:14px; }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 100px 0; }
+  .header { padding:28px 20px 0; }
+  .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
+  .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
+  .header-meta { font-size:11px;color:var(--muted);margin-top:6px; }
+  .stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:20px 20px 0; }
+  .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center; }
+  .stat-value { font-size:20px;font-weight:700;color:var(--accent);line-height:1; }
+  .stat-value.income { color:var(--income); }
+  .stat-value.expense { color:var(--danger); }
+  .stat-value.positive { color:var(--income); }
+  .stat-value.negative { color:var(--danger); }
+  .stat-label { font-size:9px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.1em; }
+  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .3s; }
+  .form-card.edit-mode { border-color:var(--accent2); }
+  .form-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+  .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
+  .form-card.edit-mode .form-title { color:var(--accent2); }
+  .form-card.edit-mode .form-title::before { background:var(--accent2); }
+  .field-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .field { margin-bottom:10px; }
+  label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:5px; }
+  input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none; }
+  input:focus { border-color:var(--accent); }
+  input::placeholder { color:var(--muted); }
+  .tags { display:flex;flex-wrap:wrap;gap:6px;margin-top:4px; }
+  .tag { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s; }
+  .tag.active { background:var(--accent);border-color:var(--accent);color:#0e0f11;font-weight:700; }
+  .tag.einnahme-tag.active { background:var(--income);border-color:var(--income);color:#0e0f11; }
+  .tag.ausgabe-tag.active { background:var(--danger);border-color:var(--danger);color:#fff; }
+  .btn-add { width:100%;margin-top:14px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer; }
+  .btn-add:active { opacity:.8; }
+  .btn-cancel { width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;cursor:pointer; }
+  .list-header { display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;gap:8px; }
+  .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1; }
+  .sync-dot { width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0; }
+  .sync-dot.ok { background:#47f57a; }
+  .sync-dot.err { background:var(--danger); }
+  .btn-refresh { background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;line-height:1; }
+  .monat-select { background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:12px;padding:7px 10px;outline:none;cursor:pointer;width:auto; }
+  .monat-select:focus { border-color:var(--accent); }
+  .data-bar { display:flex;gap:8px;padding:12px 20px 0;justify-content:flex-end; }
+  .btn-data { background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:11px;cursor:pointer; }
+  .btn-data:hover { border-color:var(--accent);color:var(--accent); }
+  .buchung-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
+  .buchung-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;border-left-width:3px; }
+  .buchung-card.einnahme { border-left-color:var(--income); }
+  .buchung-card.ausgabe { border-left-color:var(--danger); }
+  .buchung-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px; }
+  .buchung-beschreibung { font-size:15px;font-weight:700;color:var(--text);line-height:1.3;flex:1;padding-right:80px; }
+  .buchung-betrag { font-size:18px;font-weight:700;white-space:nowrap; }
+  .buchung-betrag.einnahme { color:var(--income); }
+  .buchung-betrag.ausgabe { color:var(--danger); }
+  .buchung-meta { display:flex;gap:6px;align-items:center;flex-wrap:wrap; }
+  .buchung-date { font-size:11px;color:var(--muted); }
+  .buchung-kat { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--muted); }
+  .btn-delete,.btn-edit { position:absolute;top:10px;display:none;border:none;border-radius:6px;width:26px;height:26px;font-size:14px;cursor:pointer;align-items:center;justify-content:center; }
+  .btn-delete { right:10px;background:var(--danger);color:white;font-size:16px; }
+  .btn-edit { right:42px;background:var(--accent2);color:#0e0f11; }
+  .buchung-card:hover .btn-delete,.buchung-card:active .btn-delete,
+  .buchung-card:hover .btn-edit,.buchung-card:active .btn-edit { display:flex; }
+  .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
+  .empty-icon { font-size:40px;margin-bottom:12px;opacity:.4; }
+  .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
+  .toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Finanzen</div>
+  <h1>Finanz&uuml;bersicht</h1>
+  <div class="header-meta" id="headerMeta">Noch keine Buchungen</div>
+</div>
+
+<div class="stats">
+  <div class="stat-box">
+    <div class="stat-value income" id="statEinnahmen">0 &#8364;</div>
+    <div class="stat-label">Einnahmen</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value expense" id="statAusgaben">0 &#8364;</div>
+    <div class="stat-label">Ausgaben</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value" id="statSaldo">0 &#8364;</div>
+    <div class="stat-label">Saldo</div>
+  </div>
+</div>
+
+<div class="form-card" id="formCard">
+  <div class="form-title" id="formTitle">Buchung eintragen</div>
+
+  <div class="field">
+    <label>Typ</label>
+    <div class="tags" id="typTags">
+      <div class="tag einnahme-tag" data-typ="einnahme" onclick="selectTyp(this,'einnahme')">+ Einnahme</div>
+      <div class="tag ausgabe-tag active" data-typ="ausgabe" onclick="selectTyp(this,'ausgabe')">- Ausgabe</div>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label>Betrag (&euro;)</label>
+      <input type="number" id="fBetrag" placeholder="0.00" min="0" step="0.01">
+    </div>
+    <div class="field">
+      <label>Datum</label>
+      <input type="date" id="fDatum">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Beschreibung</label>
+    <input type="text" id="fBeschreibung" placeholder="Wof&uuml;r?">
+  </div>
+
+  <div class="field">
+    <label>Kategorie</label>
+    <div class="tags" id="katTags"></div>
+  </div>
+
+  <button class="btn-add" id="btnAdd" onclick="addBuchung()">+ Buchung hinzuf&uuml;gen</button>
+  <button class="btn-cancel" id="btnCancel" onclick="cancelEdit()" style="display:none;">Abbrechen</button>
+</div>
+
+<div class="list-header">
+  <div class="list-title">Meine Buchungen</div>
+  <div class="sync-dot" id="syncDot" title="Sync-Status"></div>
+  <button class="btn-refresh" onclick="loadData()" title="Aktualisieren">&#8635;</button>
+  <input type="month" id="monatSelect" class="monat-select" onchange="render()">
+</div>
+
+<div class="data-bar">
+  <button class="btn-data" onclick="exportJSON()">&#8593; Sichern</button>
+  <label class="btn-data" style="cursor:pointer;">&#8595; Importieren<input type="file" accept=".json" onchange="importJSON(this)" style="display:none;"></label>
+</div>
+
+<div class="buchung-list" id="buchungList">
+  <div class="empty-state"><div class="empty-icon">&#128176;</div>Noch keine Buchungen eingetragen</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var API_URL = 'https://tonibader.synology.me/finanzen-api.php';
+var API_KEY = 'fin_k8mL4qSy6vNw';
+
+var KATS = {
+  einnahme: ['Gehalt', 'Mieteinnahmen', 'Freiberuflich', 'Sonstiges'],
+  ausgabe:  ['Wohnen', 'Lebensmittel', 'Auto', 'Versicherung', 'Unterhaltung', 'Sonstiges']
+};
+
+var buchungen = [];
+var editId = null;
+var currentTyp = 'ausgabe';
+
+document.getElementById('fDatum').value = new Date().toISOString().split('T')[0];
+var _now = new Date();
+document.getElementById('monatSelect').value = _now.getFullYear() + '-' + String(_now.getMonth()+1).padStart(2,'0');
+
+// ---- API / Storage ----
+
+async function loadData() {
+  var local = JSON.parse(localStorage.getItem('finanzen') || '[]');
+  try {
+    var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}});
+    if (r.ok) {
+      var remote = await r.json();
+      buchungen = remote.length > 0 ? remote : local;
+      setSyncDot(true);
+    } else {
+      buchungen = local;
+      setSyncDot(false);
+    }
+  } catch(e) {
+    buchungen = local;
+    setSyncDot(false);
+    showToast('Offline \u2013 lokale Daten geladen');
+  }
+  render();
+}
+
+async function save() {
+  localStorage.setItem('finanzen', JSON.stringify(buchungen));
+  try {
+    var r = await fetch(API_URL, {
+      method: 'POST',
+      headers: {'X-API-Key': API_KEY, 'Content-Type': 'application/json'},
+      body: JSON.stringify(buchungen)
+    });
+    setSyncDot(r.ok);
+    return r.ok;
+  } catch(e) {
+    setSyncDot(false);
+    return false;
+  }
+}
+
+function setSyncDot(ok) {
+  var d = document.getElementById('syncDot');
+  d.className = 'sync-dot ' + (ok ? 'ok' : 'err');
+  d.title = ok ? 'Synology: gespeichert' : 'Nur lokal gespeichert';
+}
+
+// ---- Form ----
+
+function selectTyp(el, typ) {
+  currentTyp = typ;
+  document.querySelectorAll('#typTags .tag').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  renderKatTags(null);
+}
+
+function renderKatTags(selectedKat) {
+  var kats = KATS[currentTyp];
+  var defaultKat = selectedKat || kats[kats.length - 1];
+  var container = document.getElementById('katTags');
+  container.innerHTML = '';
+  kats.forEach(function(k) {
+    var t = document.createElement('div');
+    t.className = 'tag' + (k === defaultKat ? ' active' : '');
+    t.textContent = k;
+    t.onclick = function() { selectKat(this); };
+    container.appendChild(t);
+  });
+}
+
+function selectKat(el) {
+  document.querySelectorAll('#katTags .tag').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function getKat() {
+  var a = document.querySelector('#katTags .tag.active');
+  return a ? a.textContent : 'Sonstiges';
+}
+
+function addBuchung() {
+  var betrag = parseFloat(document.getElementById('fBetrag').value);
+  var datum  = document.getElementById('fDatum').value;
+  var beschreibung = document.getElementById('fBeschreibung').value.trim();
+  var kat    = getKat();
+  if (!betrag || !datum || !beschreibung) { showToast('Bitte alle Felder ausf\u00fcllen!'); return; }
+  if (editId !== null) {
+    var idx = buchungen.findIndex(function(b) { return b.id === editId; });
+    if (idx !== -1) buchungen[idx] = {id:editId, datum:datum, betrag:betrag, beschreibung:beschreibung, typ:currentTyp, kategorie:kat};
+    showToast('Buchung aktualisiert!');
+    cancelEdit();
+  } else {
+    buchungen.unshift({id:Date.now(), datum:datum, betrag:betrag, beschreibung:beschreibung, typ:currentTyp, kategorie:kat});
+    showToast('Buchung gespeichert!');
+    resetForm();
+  }
+  save(); render();
+}
+
+function editBuchung(id) {
+  var b = buchungen.find(function(b) { return b.id === id; });
+  if (!b) return;
+  editId = id;
+  currentTyp = b.typ;
+  document.getElementById('fBetrag').value = b.betrag;
+  document.getElementById('fDatum').value = b.datum;
+  document.getElementById('fBeschreibung').value = b.beschreibung;
+  document.querySelectorAll('#typTags .tag').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.typ === b.typ);
+  });
+  renderKatTags(b.kategorie);
+  document.getElementById('formCard').classList.add('edit-mode');
+  document.getElementById('formTitle').textContent = 'Buchung bearbeiten';
+  document.getElementById('btnAdd').textContent = 'Speichern';
+  document.getElementById('btnCancel').style.display = 'block';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function deleteBuchung(id) {
+  buchungen = buchungen.filter(function(b) { return b.id !== id; });
+  save(); render();
+  showToast('Buchung gel\u00f6scht');
+}
+
+function cancelEdit() {
+  editId = null;
+  document.getElementById('formCard').classList.remove('edit-mode');
+  document.getElementById('formTitle').textContent = 'Buchung eintragen';
+  document.getElementById('btnAdd').textContent = '+ Buchung hinzuf\u00fcgen';
+  document.getElementById('btnCancel').style.display = 'none';
+  resetForm();
+}
+
+function resetForm() {
+  document.getElementById('fBetrag').value = '';
+  document.getElementById('fBeschreibung').value = '';
+  document.getElementById('fDatum').value = new Date().toISOString().split('T')[0];
+  currentTyp = 'ausgabe';
+  document.querySelectorAll('#typTags .tag').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.typ === 'ausgabe');
+  });
+  renderKatTags(null);
+}
+
+// ---- Render ----
+
+function render() {
+  var monat = document.getElementById('monatSelect').value;
+  var filtered = monat
+    ? buchungen.filter(function(b) { return b.datum && b.datum.startsWith(monat); })
+    : buchungen;
+
+  var einnahmen = filtered
+    .filter(function(b) { return b.typ === 'einnahme'; })
+    .reduce(function(s, b) { return s + b.betrag; }, 0);
+  var ausgaben = filtered
+    .filter(function(b) { return b.typ === 'ausgabe'; })
+    .reduce(function(s, b) { return s + b.betrag; }, 0);
+  var saldo = einnahmen - ausgaben;
+
+  document.getElementById('statEinnahmen').textContent = formatEur(einnahmen);
+  document.getElementById('statAusgaben').textContent  = formatEur(ausgaben);
+  var saldoEl = document.getElementById('statSaldo');
+  saldoEl.textContent = (saldo >= 0 ? '+' : '-') + formatEur(Math.abs(saldo));
+  saldoEl.className = 'stat-value ' + (saldo >= 0 ? 'positive' : 'negative');
+
+  var monatLabel = monat ? formatMonat(monat) : 'Gesamt';
+  document.getElementById('headerMeta').textContent =
+    filtered.length + ' Buchung' + (filtered.length !== 1 ? 'en' : '') + ' \u00b7 ' + monatLabel;
+
+  var list = document.getElementById('buchungList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128176;</div>' +
+      (monat ? 'Keine Buchungen f\u00fcr diesen Monat' : 'Noch keine Buchungen eingetragen') + '</div>';
+    return;
+  }
+
+  var sorted = filtered.slice().sort(function(a, b) { return b.datum.localeCompare(a.datum); });
+  list.innerHTML = sorted.map(function(b) {
+    var sign = b.typ === 'einnahme' ? '+' : '-';
+    return '<div class="buchung-card ' + b.typ + '">' +
+      '<button class="btn-delete" onclick="deleteBuchung(' + b.id + ')">&#10005;</button>' +
+      '<button class="btn-edit"   onclick="editBuchung('   + b.id + ')">&#9998;</button>' +
+      '<div class="buchung-top">' +
+        '<div class="buchung-beschreibung">' + escHtml(b.beschreibung) + '</div>' +
+        '<div class="buchung-betrag ' + b.typ + '">' + sign + formatEur(b.betrag) + '</div>' +
+      '</div>' +
+      '<div class="buchung-meta">' +
+        '<div class="buchung-date">' + formatDate(b.datum) + '</div>' +
+        '<div class="buchung-kat">' + escHtml(b.kategorie) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ---- Import / Export ----
+
+function exportJSON() {
+  var blob = new Blob([JSON.stringify(buchungen, null, 2)], {type: 'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finanzen-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+}
+
+function importJSON(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('Ung\u00fcltiges Format');
+      buchungen = data;
+      save(); render();
+      showToast(data.length + ' Buchungen importiert');
+    } catch(err) {
+      showToast('Fehler beim Import: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ---- Helpers ----
+
+function formatEur(val) {
+  return Math.abs(val).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + '\u00a0\u20ac';
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  var p = d.split('-');
+  return p[2] + '.' + p[1] + '.' + p[0];
+}
+
+function formatMonat(m) {
+  if (!m) return '';
+  var p = m.split('-');
+  var monate = ['Jan','Feb','Mrz','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  return monate[parseInt(p[1],10)-1] + ' ' + p[0];
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ---- Init ----
+renderKatTags(null);
+loadData();
+</script>
+</body>
+</html>
