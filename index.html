@@ -199,8 +199,11 @@ document.getElementById('monatSelect').value = _now0.getFullYear() + '-' + Strin
 
 async function loadFahrten() {
   var local = JSON.parse(localStorage.getItem('fahrten') || '[]');
+  var controller = new AbortController();
+  var timer = setTimeout(function(){controller.abort();}, 5000);
   try {
-    var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}});
+    var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}, signal:controller.signal});
+    clearTimeout(timer);
     if (r.ok) {
       var remote = await r.json();
       fahrten = remote.length > 0 ? remote : local;
@@ -210,9 +213,10 @@ async function loadFahrten() {
       setSyncDot(false);
     }
   } catch(e) {
+    clearTimeout(timer);
     fahrten = local;
     setSyncDot(false);
-    showToast('Offline \u2013 lokale Daten geladen');
+    if (local.length === 0) showToast('Offline \u2013 keine lokalen Daten');
   }
   render();
 }
