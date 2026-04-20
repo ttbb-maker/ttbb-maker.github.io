@@ -513,6 +513,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeExportModal()">Schließen</button>
+      <button class="btn btn-primary" onclick="exportAll()" id="export-all-btn">⬇ Alles herunterladen</button>
     </div>
   </div>
 </div>
@@ -883,6 +884,14 @@ function exportCSVAll(){
     rows.push([]);
   });
   dlCSV(rows,'finanzuebersicht_gesamt');
+}
+
+function exportAll(){
+  const btn=document.getElementById('export-all-btn');
+  btn.disabled=true;btn.textContent='⏳ Wird exportiert…';
+  const fns=[exportJSON,exportCSVImmobilien,exportCSVAktien,exportCSVEdelmetalle,exportCSVKredite,exportCSVBauspar,exportCSVAll];
+  fns.forEach((fn,i)=>setTimeout(fn,i*200));
+  setTimeout(()=>{btn.disabled=false;btn.textContent='⬇ Alles herunterladen';},fns.length*200+300);
 }
 function importData(input){
   const file=input.files[0];if(!file)return;
