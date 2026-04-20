@@ -115,6 +115,27 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
 .tbl-wrap{overflow-x:auto}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text-dim);flex-shrink:0;display:inline-block;transition:background .3s}
 .sync-dot.ok{background:var(--green)}.sync-dot.err{background:var(--red)}
+.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.export-tile{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px 14px;cursor:pointer;transition:.15s;text-align:center}
+.export-tile:hover{border-color:var(--gold-dim);background:rgba(201,168,76,.05)}
+.export-tile .et-icon{font-size:26px;margin-bottom:8px}
+.export-tile .et-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.export-tile .et-desc{font-size:10px;color:var(--text-dim)}
+.export-section-title{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px}
+.csv-option{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;margin-bottom:6px;cursor:pointer;transition:.15s}
+.csv-option:hover{border-color:var(--gold-dim)}
+.csv-option .co-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+.csv-option .co-count{font-size:11px;color:var(--text-dim);font-family:'DM Mono',monospace}
+@media print{
+  #sidebar,button,.btn,.overlay,.nav-bottom .lbl+*,#sync-dot,#sync-lbl{display:none!important}
+  body{background:#fff!important;color:#111!important}
+  #main{padding:0!important;overflow:visible!important}
+  .page{display:block!important}
+  .card,.kpi,.sub-card{border:1px solid #ddd!important;background:#fff!important;break-inside:avoid}
+  *{color:#111!important;background:transparent!important}
+  .badge{border:1px solid #999!important}
+  .chart-wrap canvas{max-height:180px}
+}
 </style>
 </head>
 <body>
@@ -168,7 +189,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
   <div class="header-row">
     <div><h2>Dashboard</h2><p class="subtitle" style="margin-bottom:0">Portfolio Übersicht</p></div>
     <button class="btn btn-ghost btn-sm" onclick="addSnapshot()">📸 Snapshot speichern</button>
-    <button class="btn btn-ghost btn-sm" onclick="exportData()">📤 Sichern</button>
+    <button class="btn btn-ghost btn-sm" onclick="openExportModal()">📤 Exportieren</button>
     <label class="btn btn-ghost btn-sm" style="cursor:pointer">📥 Importieren<input type="file" accept=".json" onchange="importData(this)" style="display:none"></label>
   </div>
   <div class="kpi-row" id="dash-kpis"></div>
@@ -465,6 +486,37 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     </div>
   </div>
 </div>
+
+<!-- EXPORT MODAL -->
+<div class="overlay" id="export-overlay">
+  <div class="modal wide">
+    <button class="close-btn" onclick="closeExportModal()">&#x2715;</button>
+    <h3>Exportieren</h3>
+    <div class="export-grid">
+      <div class="export-tile" onclick="exportJSON()">
+        <div class="et-icon">💾</div>
+        <div class="et-title">JSON Backup</div>
+        <div class="et-desc">Vollständige Datensicherung · wiederherstellbar</div>
+      </div>
+      <div class="export-tile" onclick="exportPrint()">
+        <div class="et-icon">🖨️</div>
+        <div class="et-title">Drucken / PDF</div>
+        <div class="et-desc">Alle Seiten drucken oder als PDF speichern</div>
+      </div>
+    </div>
+    <div class="export-section-title">CSV Export — Einzelne Kategorien</div>
+    <div id="export-csv-list"></div>
+    <div class="export-section-title">CSV Export — Kombiniert</div>
+    <div class="csv-option" onclick="exportCSVAll()">
+      <div class="co-label"><span style="font-size:16px">📊</span> Gesamtportfolio (alle Kategorien)</div>
+      <span class="co-count" id="export-total-count">—</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeExportModal()">Schließen</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── SYNOLOGY API ──────────────────────────────────────────────────────────────
 var API_URL = 'https://tonibader.synology.me/finanzuebersicht-api.php';
@@ -719,11 +771,118 @@ function renderDashboard(){
   renderWealthChart();renderDonut();renderProjChart();
   document.getElementById('dash-cats').innerHTML=['immobilien','aktien','edelmetalle','kredite','bauspar'].map(c=>`<div class="cat-card" onclick="switchTo('${c}')"><div class="icon">${ICONS[c]}</div><div class="cat-name">${LABELS[c]}</div><div class="cat-val">${fmt(catGross(c))}</div><div class="cat-count">${data[c].length} Eintrag${data[c].length!==1?'e':''}</div></div>`).join('');
 }
-function exportData(){
+function exportData(){exportJSON();}
+
+// ── EXPORT MODAL ──────────────────────────────────────────────────────────────
+function openExportModal(){
+  const csvDefs=[
+    {key:'immobilien',icon:'🏠',label:'Immobilien',fn:exportCSVImmobilien},
+    {key:'aktien',icon:'📈',label:'Aktien & ETFs',fn:exportCSVAktien},
+    {key:'edelmetalle',icon:'🥇',label:'Edelmetalle',fn:exportCSVEdelmetalle},
+    {key:'kredite',icon:'💼',label:'B2B Kredite',fn:exportCSVKredite},
+    {key:'bauspar',icon:'🏦',label:'Bausparverträge',fn:exportCSVBauspar},
+  ];
+  const total=csvDefs.reduce((s,d)=>s+data[d.key].length,0);
+  document.getElementById('export-total-count').textContent=total+' Einträge';
+  document.getElementById('export-csv-list').innerHTML=csvDefs.map((d,i)=>`
+    <div class="csv-option" onclick="exportCSVDefs[${i}].fn()">
+      <div class="co-label"><span style="font-size:16px">${d.icon}</span> ${d.label}</div>
+      <span class="co-count">${data[d.key].length} Einträge</span>
+    </div>`).join('');
+  window.exportCSVDefs=csvDefs;
+  document.getElementById('export-overlay').classList.add('open');
+}
+function closeExportModal(){document.getElementById('export-overlay').classList.remove('open');}
+
+function dlCSV(rows,filename){
+  const bom='\uFEFF';
+  const blob=new Blob([bom+rows.map(r=>r.map(c=>{
+    const s=String(c??'');
+    return s.includes(';')||s.includes('"')||s.includes('\n')?'"'+s.replace(/"/g,'""')+'"':s;
+  }).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=filename+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+function exportJSON(){
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='finanzuebersicht_backup_'+new Date().toISOString().slice(0,10)+'.json';
   a.click();
+}
+
+function exportPrint(){
+  closeExportModal();
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('active'));
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.querySelector('.nav-item.active')?.click()||document.querySelector('.nav-item[data-page="dashboard"]').click();
+    },500);
+  },120);
+}
+
+function exportCSVImmobilien(){
+  const rows=[['Objekt','Kaufpreis (€)','Marktwert (€)','Status','Kaltmiete/Mo (€)','Restschuld (€)','Eigenkapital (€)','Anz. Hypotheken','Mietrendite (%)']];
+  data.immobilien.forEach(x=>{
+    const rest=immoRestschuld(x),ek=immoEigenkapital(x),ren=x.buy>0?+(x.rent*12/x.buy*100).toFixed(2):0;
+    rows.push([x.name,x.buy,x.val,x.status,x.rent,rest,ek,(x.hypotheken||[]).length,ren]);
+  });
+  dlCSV(rows,'immobilien');
+}
+
+function exportCSVAktien(){
+  const rows=[['Ticker','Name','Anteile','Kaufkurs (€)','Akt. Kurs (€)','Investiert (€)','Akt. Wert (€)','G/V (€)','G/V (%)']];
+  data.aktien.forEach(x=>{
+    const inv=+(x.shares*x.buy).toFixed(2),val=+(x.shares*x.price).toFixed(2),gv=+(val-inv).toFixed(2),gvp=inv>0?+((gv/inv*100).toFixed(2)):0;
+    rows.push([x.ticker,x.name,x.shares,x.buy,x.price,inv,val,gv,gvp]);
+  });
+  dlCSV(rows,'aktien');
+}
+
+function exportCSVEdelmetalle(){
+  const rows=[['Metall','Art','Bezeichnung','Anzahl','Menge/St.','Einheit','Kaufjahr','Einkauf/oz (€)','Akt./oz (€)','Gesamtwert (€)','G/V (€)','G/V (%)']];
+  data.edelmetalle.forEach(x=>{
+    const val=+edelWert(x).toFixed(2),cost=+edelEinstand(x).toFixed(2),gv=+(val-cost).toFixed(2),gvp=cost>0?+((gv/cost*100).toFixed(2)):0;
+    rows.push([x.metal,x.klassifizierung||'',x.name||'',x.anzahl||1,x.qty||0,x.unit||'oz',x.kaufjahr||'',x.buyOz||0,x.priceOz||0,val,gv,gvp]);
+  });
+  dlCSV(rows,'edelmetalle');
+}
+
+function exportCSVKredite(){
+  const rows=[['Kreditnehmer','Betrag (€)','Zinssatz (%)','Laufzeit bis','Jahresertrag (€)','Status']];
+  data.kredite.forEach(x=>{
+    rows.push([x.name,x.amount,x.rate,x.maturity||'',+(x.amount*x.rate/100).toFixed(2),x.status]);
+  });
+  dlCSV(rows,'kredite');
+}
+
+function exportCSVBauspar(){
+  const rows=[['Anbieter','Bausparsumme (€)','Gespart (€)','Fortschritt (%)','Zinssatz (%)','Zuteilung']];
+  data.bauspar.forEach(x=>{
+    const prog=x.target>0?+((x.saved/x.target*100).toFixed(1)):0;
+    rows.push([x.provider,x.target,x.saved,prog,x.rate,x.zuteilung||'']);
+  });
+  dlCSV(rows,'bauspar');
+}
+
+function exportCSVAll(){
+  const sections=[
+    {title:'IMMOBILIEN',headers:['Objekt','Kaufpreis (€)','Marktwert (€)','Status','Kaltmiete/Mo (€)','Restschuld (€)','Eigenkapital (€)'],rows:data.immobilien.map(x=>[x.name,x.buy,x.val,x.status,x.rent,immoRestschuld(x),immoEigenkapital(x)])},
+    {title:'AKTIEN & ETFs',headers:['Ticker','Name','Anteile','Kaufkurs (€)','Akt. Kurs (€)','Investiert (€)','Akt. Wert (€)','G/V (€)'],rows:data.aktien.map(x=>{const inv=+(x.shares*x.buy).toFixed(2),val=+(x.shares*x.price).toFixed(2);return[x.ticker,x.name,x.shares,x.buy,x.price,inv,val,+(val-inv).toFixed(2)]})},
+    {title:'EDELMETALLE',headers:['Metall','Art','Bezeichnung','Gesamtwert (€)','G/V (€)'],rows:data.edelmetalle.map(x=>{const val=+edelWert(x).toFixed(2),cost=+edelEinstand(x).toFixed(2);return[x.metal,x.klassifizierung||'',x.name||'',val,+(val-cost).toFixed(2)]})},
+    {title:'B2B KREDITE',headers:['Kreditnehmer','Betrag (€)','Zinssatz (%)','Status'],rows:data.kredite.map(x=>[x.name,x.amount,x.rate,x.status])},
+    {title:'BAUSPARVERTRÄGE',headers:['Anbieter','Gespart (€)','Bausparsumme (€)','Zinssatz (%)'],rows:data.bauspar.map(x=>[x.provider,x.saved,x.target,x.rate])},
+  ];
+  const rows=[['Finanzübersicht Export — '+new Date().toLocaleDateString('de-DE')],[],['Bruttovermögen (€)',totalGross().toFixed(2)],['Eigenkapital netto (€)',totalNet().toFixed(2)],[]];
+  sections.forEach(s=>{
+    rows.push([s.title]);
+    rows.push(s.headers);
+    s.rows.forEach(r=>rows.push(r));
+    rows.push([]);
+  });
+  dlCSV(rows,'finanzuebersicht_gesamt');
 }
 function importData(input){
   const file=input.files[0];if(!file)return;
