@@ -137,9 +137,104 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
   .badge{border:1px solid #999!important}
   .chart-wrap canvas{max-height:180px}
 }
+
+/* ── MOBILE ──────────────────────────────────────────────────────────────── */
+#mobile-header{display:none}
+#mobile-nav{display:none}
+
+@media(max-width:680px){
+  body{flex-direction:column;font-size:15px}
+  #sidebar{display:none}
+  #main{padding:14px 14px 88px;overflow-y:auto}
+
+  /* Top header */
+  #mobile-header{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border-bottom:1px solid var(--border);
+    padding:12px 16px;position:sticky;top:0;z-index:50;flex-shrink:0;
+  }
+  #mobile-header .mh-logo{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--gold);font-weight:600}
+  #mobile-header .mh-kpis{display:flex;gap:16px}
+  #mobile-header .mh-kpi{text-align:right}
+  #mobile-header .mh-val{display:block;font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+  #mobile-header .mh-lbl{display:block;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px}
+  #mh-gross{color:var(--gold)}
+  #mh-net{color:var(--green)}
+
+  /* Bottom nav */
+  #mobile-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:60;
+    background:var(--surface);border-top:1px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .mn-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:8px 4px;cursor:pointer;color:var(--text-dim);transition:.15s;
+    font-size:9px;letter-spacing:.3px;gap:4px;text-transform:uppercase;min-height:56px;
+  }
+  .mn-item.active{color:var(--gold)}
+  .mn-item svg{width:20px;height:20px;flex-shrink:0}
+
+  /* Layout */
+  .dash-grid{grid-template-columns:1fr}
+  .amort-row{grid-template-columns:1fr 1fr}
+  .field-row,.field-row3{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  h2{font-size:21px}
+  .header-row{flex-direction:column;align-items:flex-start}
+  .header-row>div:first-child{width:100%}
+  .btn-group{width:100%}
+  .btn-group .btn{flex:1;justify-content:center}
+  .tabs{width:100%}
+  .tab{flex:1;text-align:center;padding:7px 6px}
+  .export-grid{grid-template-columns:1fr}
+
+  /* Modals as bottom sheet */
+  .overlay{align-items:flex-end;padding:0}
+  .modal,.modal.wide{width:100%;max-width:100%;border-radius:18px 18px 0 0;max-height:92vh;padding:20px 18px 28px}
+  .modal h3{font-size:18px}
+}
 </style>
 </head>
 <body>
+
+<!-- MOBILE HEADER -->
+<header id="mobile-header">
+  <div class="mh-logo">Finanzübersicht</div>
+  <div class="mh-kpis">
+    <div class="mh-kpi"><span class="mh-val" id="mh-gross">€0</span><span class="mh-lbl">Brutto</span></div>
+    <div class="mh-kpi"><span class="mh-val" id="mh-net">€0</span><span class="mh-lbl">Netto EK</span></div>
+  </div>
+</header>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="mobile-nav">
+  <div class="mn-item active" data-page="dashboard">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+    Übersicht
+  </div>
+  <div class="mn-item" data-page="immobilien">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 14V6.5L8 2l7 4.5V14H1z"/><rect x="5.5" y="9" width="5" height="5"/></svg>
+    Immo
+  </div>
+  <div class="mn-item" data-page="aktien">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,11 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>
+    Aktien
+  </div>
+  <div class="mn-item" data-page="edelmetalle">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="8,1 14,5 12,13 4,13 2,5"/></svg>
+    Metalle
+  </div>
+  <div class="mn-item" data-page="kredite">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="14" height="10" rx="1.5"/><path d="M4 4V3a4 4 0 018 0v1"/></svg>
+    Kredite
+  </div>
+  <div class="mn-item" data-page="bauspar">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="5" width="14" height="9" rx="1"/><path d="M4 5V3.5A2.5 2.5 0 018 2a2.5 2.5 0 014 1.5V5"/><line x1="1" y1="9" x2="15" y2="9"/></svg>
+    Bauspar
+  </div>
+</nav>
+
 <aside id="sidebar">
   <div class="logo"><h1>Finanzübersicht</h1><p>Portfolio Tracker</p></div>
   <nav>
@@ -626,10 +721,14 @@ document.addEventListener('visibilitychange',()=>{
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 
-// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+// ── SIDEBAR / HEADER ─────────────────────────────────────────────────────────
 function updateSidebar(){
-  document.getElementById('sb-gross').textContent=fmt(totalGross());
-  document.getElementById('sb-net').textContent=fmt(totalNet());
+  const gross=fmt(totalGross()),net=fmt(totalNet());
+  document.getElementById('sb-gross').textContent=gross;
+  document.getElementById('sb-net').textContent=net;
+  const mhg=document.getElementById('mh-gross'),mhn=document.getElementById('mh-net');
+  if(mhg)mhg.textContent=gross;
+  if(mhn)mhn.textContent=net;
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
@@ -637,22 +736,19 @@ const LABELS={immobilien:'Immobilien',aktien:'Aktien',edelmetalle:'Edelmetalle',
 const COLORS={immobilien:'#C9A84C',aktien:'#5C8BE0',edelmetalle:'#B8B8B8',kredite:'#8B5CE0',bauspar:'#4CAF7D'};
 const ICONS={immobilien:'🏠',aktien:'📈',edelmetalle:'🥇',kredite:'💼',bauspar:'🏦'};
 
-document.querySelectorAll('.nav-item').forEach(el=>{
-  el.addEventListener('click',()=>{
-    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('page-'+el.dataset.page).classList.add('active');
-    renderPage(el.dataset.page);
-  });
-});
-function switchTo(cat){
-  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+function navSwitch(page){
+  document.querySelectorAll('.nav-item,.mn-item').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-  document.querySelector('[data-page="'+cat+'"]').classList.add('active');
-  document.getElementById('page-'+cat).classList.add('active');
-  renderPage(cat);
+  document.querySelectorAll('[data-page="'+page+'"]').forEach(x=>x.classList.add('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(window.innerWidth<=680)window.scrollTo(0,0);
+  renderPage(page);
 }
+
+document.querySelectorAll('.nav-item').forEach(el=>el.addEventListener('click',()=>navSwitch(el.dataset.page)));
+document.querySelectorAll('.mn-item').forEach(el=>el.addEventListener('click',()=>navSwitch(el.dataset.page)));
+
+function switchTo(cat){navSwitch(cat);}
 function renderPage(p){
   if(p==='dashboard')renderDashboard();
   else if(p==='immobilien')renderImmobilien();
