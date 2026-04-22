@@ -173,8 +173,10 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
   <div class="nav-bottom">
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
       <div class="sync-dot" id="sync-dot" title="Sync-Status"></div>
-      <span style="font-size:10px;color:var(--text-dim)" id="sync-lbl">Synology</span>
+      <span style="font-size:10px;color:var(--text-dim);flex:1" id="sync-lbl">Cloud Sync</span>
+      <button onclick="openSyncSettings()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1" title="Sync einrichten">⚙</button>
     </div>
+    <div style="font-size:9px;color:var(--text-dim);margin-bottom:10px" id="sync-time"></div>
     <div class="lbl">Bruttovermögen</div>
     <div class="gross" id="sb-gross">€0</div>
     <div class="netlbl">Eigenkapital (netto)</div>
@@ -487,6 +489,32 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
   </div>
 </div>
 
+<!-- SYNC SETTINGS MODAL -->
+<div class="overlay" id="sync-overlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeSyncSettings()">&#x2715;</button>
+    <h3>☁ Cloud Sync einrichten</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">
+      Daten werden auf <strong style="color:var(--text)">JSONBin.io</strong> gespeichert — kostenlos, von überall abrufbar.<br>
+      <a href="https://jsonbin.io" target="_blank" style="color:var(--blue)">jsonbin.io</a> → kostenlos registrieren → API Keys → Master Key kopieren.
+    </p>
+    <div class="field">
+      <label>Master Key (X-Master-Key)</label>
+      <input id="jb-key" type="password" placeholder="$2b$10$..." autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Bin ID <span style="color:var(--text-dim);font-weight:400">(wird automatisch erstellt)</span></label>
+      <input id="jb-bin" type="text" placeholder="wird nach erstem Verbinden ausgefüllt" readonly style="cursor:default;opacity:.7">
+    </div>
+    <div id="sync-test-result" style="display:none;margin-bottom:12px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSyncSettings()">Abbrechen</button>
+      <button class="btn btn-ghost" onclick="testSyncConnection()" id="sync-test-btn">Verbindung testen</button>
+      <button class="btn btn-primary" onclick="saveSyncSettings()">Speichern &amp; Verbinden</button>
+    </div>
+  </div>
+</div>
+
 <!-- EXPORT MODAL -->
 <div class="overlay" id="export-overlay">
   <div class="modal wide">
@@ -519,7 +547,10 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
 </div>
 
 <script>
-// ── SYNOLOGY API ──────────────────────────────────────────────────────────────
+// ── CLOUD SYNC (JSONBin.io) ───────────────────────────────────────────────────
+var JBIN_BASE = 'https://api.jsonbin.io/v3/b';
+var syncCfg = JSON.parse(localStorage.getItem('finanz_sync') || '{}');
+// Legacy Synology config kept only for AI-Proxy (PDF import)
 var API_URL = 'https://tonibader.synology.me/finanzuebersicht-api.php';
 var API_KEY = 'fin_k8mL4qSy6vNw';
 
@@ -581,38 +612,106 @@ function totalNet(){
 }
 
 // ── SYNC / STORAGE ────────────────────────────────────────────────────────────
+function jbHeaders(){return{'Content-Type':'application/json','X-Master-Key':syncCfg.key||'','X-Bin-Private':'false'};}
+
 async function save(){
   localStorage.setItem('finanz_v2',JSON.stringify(data));
+  if(!syncCfg.key){setSyncDot(false,'Kein API-Key — ⚙ einrichten');return;}
   try{
-    const r=await fetch(API_URL,{method:'POST',headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'},body:JSON.stringify(data)});
-    setSyncDot(r.ok);
-  }catch(e){setSyncDot(false);}
+    if(!syncCfg.bin){
+      const r=await fetch(JBIN_BASE,{method:'POST',headers:{...jbHeaders(),'X-Bin-Name':'Finanzuebersicht'},body:JSON.stringify(data)});
+      if(!r.ok){setSyncDot(false,'Erstellen fehlgeschlagen');return;}
+      const j=await r.json();
+      syncCfg.bin=j.metadata.id;
+      localStorage.setItem('finanz_sync',JSON.stringify(syncCfg));
+    }else{
+      const r=await fetch(JBIN_BASE+'/'+syncCfg.bin,{method:'PUT',headers:jbHeaders(),body:JSON.stringify(data)});
+      if(!r.ok){setSyncDot(false,'Speichern fehlgeschlagen');return;}
+    }
+    setSyncDot(true);
+  }catch(e){setSyncDot(false,'Kein Internet');}
 }
 
-function setSyncDot(ok){
+function setSyncDot(ok,msg){
   const d=document.getElementById('sync-dot');if(!d)return;
   d.className='sync-dot '+(ok?'ok':'err');
-  d.title=ok?'Synology: gespeichert':'Nur lokal gespeichert';
-  const l=document.getElementById('sync-lbl');if(l)l.style.color=ok?'var(--green)':'var(--red)';
+  const l=document.getElementById('sync-lbl');
+  if(l){l.textContent=ok?'Cloud Sync':(msg||'Sync Fehler');l.style.color=ok?'var(--green)':'var(--red)';}
+  const t=document.getElementById('sync-time');
+  if(t&&ok)t.textContent='Gespeichert '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 }
 
 async function loadFromRemote(){
+  if(!syncCfg.key||!syncCfg.bin){
+    if(!syncCfg.key)setSyncDot(false,'⚙ Sync einrichten');
+    renderDashboard();updateSidebar();return;
+  }
   try{
-    const r=await fetch(API_URL,{headers:{'X-API-Key':API_KEY}});
+    const r=await fetch(JBIN_BASE+'/'+syncCfg.bin+'/latest',{headers:jbHeaders()});
     if(r.ok){
-      const remote=await r.json();
-      if(remote&&typeof remote==='object'&&!remote.error&&(remote.immobilien||remote.aktien||remote.snapshots)){
+      const j=await r.json();
+      const remote=j.record;
+      if(remote&&typeof remote==='object'&&(remote.immobilien||remote.aktien||remote.snapshots)){
         data=remote;
         data.immobilien=(data.immobilien||[]).map(x=>({hypotheken:[],mieteinnahmen:[],...x}));
         data.snapshots=data.snapshots||[];
         data.edelmetalle=migrateEdel(data.edelmetalle);
         localStorage.setItem('finanz_v2',JSON.stringify(data));
         setSyncDot(true);
-      }else{setSyncDot(false);}
-    }else{setSyncDot(false);}
-  }catch(e){setSyncDot(false);}
+      }else setSyncDot(false,'Leere Cloud-Daten');
+    }else setSyncDot(false,'Laden fehlgeschlagen');
+  }catch(e){setSyncDot(false,'Kein Internet');}
   renderDashboard();updateSidebar();
 }
+
+// ── SYNC SETTINGS ─────────────────────────────────────────────────────────────
+function openSyncSettings(){
+  document.getElementById('jb-key').value=syncCfg.key||'';
+  document.getElementById('jb-bin').value=syncCfg.bin||'';
+  document.getElementById('sync-test-result').style.display='none';
+  document.getElementById('sync-overlay').classList.add('open');
+}
+function closeSyncSettings(){document.getElementById('sync-overlay').classList.remove('open');}
+
+async function saveSyncSettings(){
+  const key=document.getElementById('jb-key').value.trim();
+  if(!key){alert('Bitte API-Key eingeben.');return;}
+  syncCfg.key=key;
+  syncCfg.bin=document.getElementById('jb-bin').value.trim()||'';
+  localStorage.setItem('finanz_sync',JSON.stringify(syncCfg));
+  closeSyncSettings();
+  await save();
+  if(!syncCfg.bin){
+    document.getElementById('jb-bin').value=syncCfg.bin;
+  }
+}
+
+async function testSyncConnection(){
+  const key=document.getElementById('jb-key').value.trim();
+  const bin=document.getElementById('jb-bin').value.trim();
+  const res=document.getElementById('sync-test-result');
+  const btn=document.getElementById('sync-test-btn');
+  if(!key){res.innerHTML='<div class="info-bar" style="color:var(--red)">Bitte API-Key eingeben.</div>';res.style.display='block';return;}
+  btn.disabled=true;btn.textContent='Teste…';
+  try{
+    let ok=false,msg='';
+    if(bin){
+      const r=await fetch(JBIN_BASE+'/'+bin+'/latest',{headers:{'X-Master-Key':key}});
+      ok=r.ok;msg=ok?'✓ Verbindung OK — Bin gefunden':'✗ Bin nicht erreichbar ('+r.status+')';
+    }else{
+      const r=await fetch('https://api.jsonbin.io/v3/b?page=1',{headers:{'X-Master-Key':key}});
+      ok=r.ok;msg=ok?'✓ API-Key gültig — kein Bin angegeben, wird beim Speichern erstellt':'✗ API-Key ungültig ('+r.status+')';
+    }
+    res.innerHTML=`<div class="info-bar" style="color:${ok?'var(--green)':'var(--red)'}">${msg}</div>`;
+  }catch(e){res.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Verbindungsfehler: '+e.message+'</div>';}
+  res.style.display='block';
+  btn.disabled=false;btn.textContent='Verbindung testen';
+}
+
+// Auto-Sync wenn App in den Vordergrund kommt
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')loadFromRemote();
+});
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 
