@@ -1580,30 +1580,40 @@ function parseTRcsv(text){
     category:headers.indexOf('category'),type:headers.indexOf('type'),
     name:headers.indexOf('name'),symbol:headers.indexOf('symbol'),
     shares:headers.indexOf('shares'),price:headers.indexOf('price'),
-    datetime:headers.indexOf('datetime')
+    amount:headers.indexOf('amount'),datetime:headers.indexOf('datetime')
   };
   if(idx.symbol<0||idx.shares<0)return null;
+
+  const BUY_TYPES=['BUY','SAVINGS_PLAN','ROUND_UP','TRADE_INVOICE'];
+  const SELL_TYPES=['SELL'];
 
   const map={};
   lines.slice(1).forEach(line=>{
     const c=parseRow(line).map(v=>v.replace(/^"|"$/g,'').trim());
-    if(!c[idx.category]||!c[idx.type])return;
+    if(!c[idx.category])return;
     if(c[idx.category]!=='TRADING')return;
-    const type=c[idx.type];
-    if(type!=='BUY'&&type!=='SELL')return;
+    const type=c[idx.type]||'';
     const isin=c[idx.symbol];if(!isin)return;
-    const shares=parseFloat(c[idx.shares])||0;
-    const price=parseFloat(c[idx.price])||0;
+    const shares=Math.abs(parseFloat(c[idx.shares])||0);if(shares===0)return;
+    const price=Math.abs(parseFloat(c[idx.price])||0);
+    const amount=parseFloat(c[idx.amount]||'0');
     const dt=c[idx.datetime]||'';
+
+    // Kauf: bekannte Buy-Typen ODER negativer Betrag (Geld geht raus)
+    // Verkauf: bekannte Sell-Typen ODER positiver Betrag (Geld kommt rein)
+    const isBuy=BUY_TYPES.includes(type)||(amount<0&&!SELL_TYPES.includes(type));
+    const isSell=SELL_TYPES.includes(type)||(amount>0&&!BUY_TYPES.includes(type));
+    if(!isBuy&&!isSell)return;
+
     if(!map[isin])map[isin]={isin,name:c[idx.name]||isin,totalBoughtShares:0,totalCost:0,currentShares:0,lastPrice:0,lastDt:''};
     const m=map[isin];
-    if(type==='BUY'){m.totalBoughtShares+=shares;m.totalCost+=shares*price;m.currentShares+=shares;}
+    if(isBuy){m.totalBoughtShares+=shares;m.totalCost+=shares*price;m.currentShares+=shares;}
     else{m.currentShares-=shares;}
     if(!m.lastDt||dt>m.lastDt){m.lastDt=dt;m.lastPrice=price;}
   });
 
   return Object.values(map)
-    .filter(m=>m.currentShares>0.0001)
+    .filter(m=>m.currentShares>0.001)
     .map(m=>({
       isin:m.isin,name:m.name,ticker:m.isin,
       shares:+m.currentShares.toFixed(6),
