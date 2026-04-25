@@ -1611,27 +1611,6 @@ function parseTRcsv(text){
     }));
 }
 
-async function lookupISINs(positions){
-  const BATCH=10;
-  for(let i=0;i<positions.length;i+=BATCH){
-    const batch=positions.slice(i,i+BATCH);
-    try{
-      const r=await fetch('https://api.openfigi.com/v3/mapping',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(batch.map(p=>({idType:'ID_ISIN',idValue:p.isin,exchCode:'GS'})))
-      });
-      if(!r.ok)continue;
-      const res=await r.json();
-      res.forEach((entry,j)=>{
-        if(entry.data&&entry.data.length){
-          const t=entry.data[0].ticker;
-          if(t)positions[i+j].ticker=t;
-        }
-      });
-    }catch(e){/* fallback to ISIN */}
-  }
-  return positions;
-}
 
 async function handleTRCsv(file){
   if(!file)return;
@@ -1642,16 +1621,14 @@ async function handleTRCsv(file){
   document.getElementById('tr-save-btn').style.display='none';
 
   try{
-    const text=await file.text();
+    const text=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsText(file,'UTF-8');});
     const positions=parseTRcsv(text);
     if(positions===null){statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Kein gültiges Trade Republic CSV-Format erkannt.</div>';return;}
     if(!positions.length){statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Keine offenen Positionen gefunden.</div>';return;}
-    statusEl.innerHTML='<div class="info-bar">⏳ Ticker werden gesucht (ISIN-Lookup)…</div>';
-    await lookupISINs(positions);
     trParsed=positions;
     trMode='csv';
     renderTRPreview(positions,'csv');
-    statusEl.innerHTML=`<div class="info-bar" style="color:var(--green)">✓ ${positions.length} Positionen erkannt.</div>`;
+    statusEl.innerHTML=`<div class="info-bar" style="color:var(--green)">✓ ${positions.length} Positionen erkannt — Ticker bitte prüfen &amp; anpassen.</div>`;
   }catch(e){statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Fehler: '+e.message+'</div>';}
 }
 
