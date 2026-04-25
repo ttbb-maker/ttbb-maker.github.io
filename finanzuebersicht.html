@@ -599,7 +599,8 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div id="tr-pdf-pane" style="display:none">
       <div class="info-bar" style="margin-bottom:14px;font-size:11px">
         Trade Republic App → Profil → Dokumente → Vermögensübersicht (PDF) exportieren &amp; hier hochladen.<br>
-        <strong>Hinweis:</strong> Das PDF enthält keinen Kaufkurs — dieser wird auf den aktuellen Kurs gesetzt &amp; kann danach angepasst werden.
+        <strong>Voraussetzung:</strong> Synology muss grün sein &amp; Anthropic API-Key in <code>finanzuebersicht-api.php</code> eingetragen sein.<br>
+        <strong>Ohne Synology:</strong> Bitte den <strong>CSV-Tab</strong> verwenden — funktioniert ohne KI.
       </div>
       <div id="tr-pdf-drop" onclick="document.getElementById('tr-pdf-input').click()"
         style="border:1px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:14px">
@@ -1661,10 +1662,18 @@ async function handleTRPdf(file){
   if(!file)return;
   const dz=document.getElementById('tr-pdf-drop');
   const statusEl=document.getElementById('tr-pdf-status');
+  statusEl.style.display='block';
+
+  // Synology erreichbar?
+  const syncOk=document.getElementById('sync-dot')?.classList.contains('ok');
+  if(!syncOk){
+    statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Synology nicht erreichbar — der KI-Proxy wird benötigt.<br><br>Bitte zuerst den CSV-Tab nutzen, oder den Anthropic API-Key in <code>finanzuebersicht-api.php</code> auf der Synology eintragen.</div>';
+    return;
+  }
+
   dz.style.borderColor='var(--gold-dim)';
   dz.innerHTML='<div style="font-size:24px;margin-bottom:8px">⏳</div><div style="font-size:13px;color:var(--text-mid)">'+file.name+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">Claude analysiert die Vermögensübersicht…</div>';
   statusEl.innerHTML='<div class="info-bar">⏳ PDF wird von Claude analysiert…</div>';
-  statusEl.style.display='block';
   document.getElementById('tr-pdf-result').style.display='none';
   document.getElementById('tr-save-btn').style.display='none';
   try{
