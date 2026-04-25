@@ -380,6 +380,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div><h2>Aktien &amp; ETFs</h2><p class="subtitle" style="margin-bottom:0">Wertpapiere &amp; Fonds</p></div>
     <div class="btn-group">
       <button class="btn btn-ghost btn-sm" id="live-btn" onclick="updateLivePrices()">⟳ Live-Kurse</button>
+      <button class="btn btn-ghost btn-sm" onclick="openTRModal()">🟢 Trade Republic</button>
       <button class="btn btn-ghost btn-sm" onclick="openAktienPdfModal()">📄 Depot importieren</button>
       <button class="btn btn-ghost btn-sm" onclick="openCSVModal()">📋 CSV Import</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('aktien')">+ Hinzufügen</button>
@@ -558,6 +559,68 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeAktienPdfModal()">Abbrechen</button>
       <button class="btn btn-primary" id="ap-save-btn" onclick="saveAktienPdf()" style="display:none">Alle übernehmen</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRADE REPUBLIC MODAL -->
+<div class="overlay" id="tr-overlay">
+  <div class="modal wide">
+    <button class="close-btn" onclick="closeTRModal()">&#x2715;</button>
+    <h3>🟢 Trade Republic Import</h3>
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab active" id="tr-tab-csv" onclick="switchTRTab('csv')">📋 CSV (Transaktionen)</div>
+      <div class="tab" id="tr-tab-pdf" onclick="switchTRTab('pdf')">📄 PDF (Vermögensübersicht)</div>
+    </div>
+
+    <!-- CSV TAB -->
+    <div id="tr-csv-pane">
+      <div class="info-bar" style="margin-bottom:14px;font-size:11px">
+        Trade Republic App → Profil → Dokumente → Kontoauszug (CSV) exportieren &amp; hier hochladen.
+      </div>
+      <div id="tr-csv-drop" onclick="document.getElementById('tr-csv-input').click()"
+        style="border:1px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:14px">
+        <div style="font-size:28px;margin-bottom:8px">📋</div>
+        <div style="font-size:13px;color:var(--text-mid)">CSV hier ablegen oder klicken</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Trade Republic Transaktionshistorie (.csv)</div>
+        <input type="file" id="tr-csv-input" accept=".csv,text/csv" style="display:none" onchange="handleTRCsv(this.files[0])">
+      </div>
+      <div id="tr-csv-status" style="display:none;margin-bottom:12px"></div>
+      <div id="tr-csv-result" style="display:none">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px">Erkannte Positionen — Ticker bitte prüfen &amp; ggf. anpassen</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Ticker</th><th>Name</th><th>ISIN</th><th>Anteile</th><th>Ø Kaufkurs</th><th>Letzter Kurs</th><th></th></tr></thead>
+          <tbody id="tr-csv-tbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- PDF TAB -->
+    <div id="tr-pdf-pane" style="display:none">
+      <div class="info-bar" style="margin-bottom:14px;font-size:11px">
+        Trade Republic App → Profil → Dokumente → Vermögensübersicht (PDF) exportieren &amp; hier hochladen.<br>
+        <strong>Hinweis:</strong> Das PDF enthält keinen Kaufkurs — dieser wird auf den aktuellen Kurs gesetzt &amp; kann danach angepasst werden.
+      </div>
+      <div id="tr-pdf-drop" onclick="document.getElementById('tr-pdf-input').click()"
+        style="border:1px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:14px">
+        <div style="font-size:28px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;color:var(--text-mid)">PDF hier ablegen oder klicken</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Trade Republic Vermögensübersicht (.pdf)</div>
+        <input type="file" id="tr-pdf-input" accept=".pdf" style="display:none" onchange="handleTRPdf(this.files[0])">
+      </div>
+      <div id="tr-pdf-status" style="display:none;margin-bottom:12px"></div>
+      <div id="tr-pdf-result" style="display:none">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px">Erkannte Positionen — Ticker bitte prüfen</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Ticker</th><th>Name</th><th>Anteile</th><th>Kurs</th><th></th></tr></thead>
+          <tbody id="tr-pdf-tbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeTRModal()">Abbrechen</button>
+      <button class="btn btn-primary" id="tr-save-btn" onclick="saveTRImport()" style="display:none">Übernehmen</button>
     </div>
   </div>
 </div>
@@ -1472,6 +1535,202 @@ function saveAktienPdf(){
   if(added||updated)setTimeout(()=>alert('✓ '+added+' neu hinzugefügt, '+updated+' aktualisiert.'),100);
 }
 
+// ── TRADE REPUBLIC IMPORT ─────────────────────────────────────────────────────
+let trParsed=[], trMode='csv';
+
+function openTRModal(){
+  trParsed=[];trMode='csv';
+  switchTRTab('csv');
+  ['tr-csv-status','tr-csv-result','tr-pdf-status','tr-pdf-result'].forEach(id=>{document.getElementById(id).style.display='none'});
+  document.getElementById('tr-save-btn').style.display='none';
+  document.getElementById('tr-csv-drop').style.borderColor='var(--border)';
+  document.getElementById('tr-csv-drop').innerHTML='<div style="font-size:28px;margin-bottom:8px">📋</div><div style="font-size:13px;color:var(--text-mid)">CSV hier ablegen oder klicken</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">Trade Republic Transaktionshistorie (.csv)</div><input type="file" id="tr-csv-input" accept=".csv,text/csv" style="display:none" onchange="handleTRCsv(this.files[0])">';
+  document.getElementById('tr-pdf-drop').style.borderColor='var(--border)';
+  document.getElementById('tr-pdf-drop').innerHTML='<div style="font-size:28px;margin-bottom:8px">📄</div><div style="font-size:13px;color:var(--text-mid)">PDF hier ablegen oder klicken</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">Trade Republic Vermögensübersicht (.pdf)</div><input type="file" id="tr-pdf-input" accept=".pdf" style="display:none" onchange="handleTRPdf(this.files[0])">';
+  document.getElementById('tr-overlay').classList.add('open');
+}
+function closeTRModal(){document.getElementById('tr-overlay').classList.remove('open');}
+
+function switchTRTab(tab){
+  trMode=tab;
+  document.getElementById('tr-csv-pane').style.display=tab==='csv'?'block':'none';
+  document.getElementById('tr-pdf-pane').style.display=tab==='pdf'?'block':'none';
+  document.getElementById('tr-tab-csv').className='tab'+(tab==='csv'?' active':'');
+  document.getElementById('tr-tab-pdf').className='tab'+(tab==='pdf'?' active':'');
+  document.getElementById('tr-save-btn').style.display='none';
+  trParsed=[];
+}
+
+function parseTRcsv(text){
+  const lines=text.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+  if(!lines.length)return[];
+  const parseRow=line=>{
+    const cols=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"'){inQ=!inQ;}
+      else if(line[i]===','&&!inQ){cols.push(cur.trim());cur='';}
+      else cur+=line[i];
+    }
+    cols.push(cur.trim());
+    return cols;
+  };
+  const headers=parseRow(lines[0]).map(h=>h.toLowerCase().replace(/"/g,''));
+  const idx={
+    category:headers.indexOf('category'),type:headers.indexOf('type'),
+    name:headers.indexOf('name'),symbol:headers.indexOf('symbol'),
+    shares:headers.indexOf('shares'),price:headers.indexOf('price'),
+    datetime:headers.indexOf('datetime')
+  };
+  if(idx.symbol<0||idx.shares<0)return null;
+
+  const map={};
+  lines.slice(1).forEach(line=>{
+    const c=parseRow(line).map(v=>v.replace(/^"|"$/g,'').trim());
+    if(!c[idx.category]||!c[idx.type])return;
+    if(c[idx.category]!=='TRADING')return;
+    const type=c[idx.type];
+    if(type!=='BUY'&&type!=='SELL')return;
+    const isin=c[idx.symbol];if(!isin)return;
+    const shares=parseFloat(c[idx.shares])||0;
+    const price=parseFloat(c[idx.price])||0;
+    const dt=c[idx.datetime]||'';
+    if(!map[isin])map[isin]={isin,name:c[idx.name]||isin,totalBoughtShares:0,totalCost:0,currentShares:0,lastPrice:0,lastDt:''};
+    const m=map[isin];
+    if(type==='BUY'){m.totalBoughtShares+=shares;m.totalCost+=shares*price;m.currentShares+=shares;}
+    else{m.currentShares-=shares;}
+    if(!m.lastDt||dt>m.lastDt){m.lastDt=dt;m.lastPrice=price;}
+  });
+
+  return Object.values(map)
+    .filter(m=>m.currentShares>0.0001)
+    .map(m=>({
+      isin:m.isin,name:m.name,ticker:m.isin,
+      shares:+m.currentShares.toFixed(6),
+      avgBuy:m.totalBoughtShares>0?+(m.totalCost/m.totalBoughtShares).toFixed(4):0,
+      lastPrice:+m.lastPrice.toFixed(4)
+    }));
+}
+
+async function lookupISINs(positions){
+  const BATCH=10;
+  for(let i=0;i<positions.length;i+=BATCH){
+    const batch=positions.slice(i,i+BATCH);
+    try{
+      const r=await fetch('https://api.openfigi.com/v3/mapping',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(batch.map(p=>({idType:'ID_ISIN',idValue:p.isin,exchCode:'GS'})))
+      });
+      if(!r.ok)continue;
+      const res=await r.json();
+      res.forEach((entry,j)=>{
+        if(entry.data&&entry.data.length){
+          const t=entry.data[0].ticker;
+          if(t)positions[i+j].ticker=t;
+        }
+      });
+    }catch(e){/* fallback to ISIN */}
+  }
+  return positions;
+}
+
+async function handleTRCsv(file){
+  if(!file)return;
+  const statusEl=document.getElementById('tr-csv-status');
+  statusEl.innerHTML='<div class="info-bar">⏳ CSV wird analysiert…</div>';
+  statusEl.style.display='block';
+  document.getElementById('tr-csv-result').style.display='none';
+  document.getElementById('tr-save-btn').style.display='none';
+
+  try{
+    const text=await file.text();
+    const positions=parseTRcsv(text);
+    if(positions===null){statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Kein gültiges Trade Republic CSV-Format erkannt.</div>';return;}
+    if(!positions.length){statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Keine offenen Positionen gefunden.</div>';return;}
+    statusEl.innerHTML='<div class="info-bar">⏳ Ticker werden gesucht (ISIN-Lookup)…</div>';
+    await lookupISINs(positions);
+    trParsed=positions;
+    trMode='csv';
+    renderTRPreview(positions,'csv');
+    statusEl.innerHTML=`<div class="info-bar" style="color:var(--green)">✓ ${positions.length} Positionen erkannt.</div>`;
+  }catch(e){statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Fehler: '+e.message+'</div>';}
+}
+
+function renderTRPreview(positions, mode){
+  if(mode==='csv'){
+    document.getElementById('tr-csv-tbody').innerHTML=positions.map((p,i)=>`<tr>
+      <td><input type="text" value="${p.ticker}" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;font-family:'DM Mono',monospace;text-transform:uppercase" onchange="trParsed[${i}].ticker=this.value.toUpperCase()"></td>
+      <td style="color:var(--text);font-size:12px">${p.name}</td>
+      <td style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace">${p.isin}</td>
+      <td class="mono">${fmtN(p.shares,4)}</td>
+      <td class="mono">${fmtN(p.avgBuy,2)} €</td>
+      <td class="mono">${fmtN(p.lastPrice,2)} €</td>
+      <td><button class="btn-icon del" onclick="trParsed.splice(${i},1);this.closest('tr').remove()">✕</button></td>
+    </tr>`).join('');
+    document.getElementById('tr-csv-result').style.display='block';
+  }else{
+    document.getElementById('tr-pdf-tbody').innerHTML=positions.map((p,i)=>`<tr>
+      <td><input type="text" value="${p.ticker}" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;font-family:'DM Mono',monospace;text-transform:uppercase" onchange="trParsed[${i}].ticker=this.value.toUpperCase()"></td>
+      <td style="color:var(--text);font-size:12px">${p.name}</td>
+      <td class="mono">${fmtN(p.shares,4)}</td>
+      <td class="mono">${fmtN(p.lastPrice,2)} €</td>
+      <td><button class="btn-icon del" onclick="trParsed.splice(${i},1);this.closest('tr').remove()">✕</button></td>
+    </tr>`).join('');
+    document.getElementById('tr-pdf-result').style.display='block';
+  }
+  document.getElementById('tr-save-btn').style.display='inline-flex';
+}
+
+async function handleTRPdf(file){
+  if(!file)return;
+  const dz=document.getElementById('tr-pdf-drop');
+  const statusEl=document.getElementById('tr-pdf-status');
+  dz.style.borderColor='var(--gold-dim)';
+  dz.innerHTML='<div style="font-size:24px;margin-bottom:8px">⏳</div><div style="font-size:13px;color:var(--text-mid)">'+file.name+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">Claude analysiert die Vermögensübersicht…</div>';
+  statusEl.innerHTML='<div class="info-bar">⏳ PDF wird von Claude analysiert…</div>';
+  statusEl.style.display='block';
+  document.getElementById('tr-pdf-result').style.display='none';
+  document.getElementById('tr-save-btn').style.display='none';
+  try{
+    const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+    const response=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-AI-Proxy':'1'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',max_tokens:3000,
+        system:`Du analysierst eine Trade Republic Vermögensübersicht (PDF). Extrahiere alle Wertpapierpositionen aus dem Abschnitt BROKERAGE. Jede Position hat: Stück/Anteile, Wertpapierbezeichnung, ISIN (steht im Format "ISIN: XX..."), Kurs pro Stück. Antworte NUR mit einem JSON-Array:\n[{"ticker":"BASF","name":"BASF SE","isin":"DE000BASF111","shares":5,"currentPrice":54.25}]\nRegeln: ticker=Börsensymbol (aus ISIN ableiten wenn möglich, sonst erste Buchstaben des Namens), shares=Stückzahl als Zahl, currentPrice=Kurs pro Stück als Zahl in EUR (Komma als Dezimaltrennzeichen beachten), ISIN aus dem PDF-Text lesen.`,
+        messages:[{role:'user',content:[
+          {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+          {type:'text',text:'Bitte extrahiere alle Wertpapierpositionen aus dieser Trade Republic Vermögensübersicht.'}
+        ]}]
+      })
+    });
+    const result=await response.json();
+    const raw=result?.content?.map(c=>c.text||'').join('').trim();
+    const positions=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if(!Array.isArray(positions)||!positions.length)throw new Error('Keine Positionen gefunden');
+    trParsed=positions.map(p=>({ticker:p.ticker||p.isin,name:p.name||'',isin:p.isin||'',shares:p.shares||0,avgBuy:p.currentPrice||0,lastPrice:p.currentPrice||0}));
+    trMode='pdf';
+    renderTRPreview(trParsed,'pdf');
+    statusEl.innerHTML=`<div class="info-bar" style="color:var(--green)">✓ ${trParsed.length} Positionen erkannt — Ticker bitte prüfen!</div>`;
+    dz.innerHTML='<div style="font-size:22px;margin-bottom:6px">✓</div><div style="font-size:13px;color:var(--green)">'+file.name+'</div>';
+  }catch(e){
+    statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Fehler: '+e.message+'</div>';
+    dz.innerHTML='<div style="font-size:28px;margin-bottom:8px">📄</div><div style="font-size:13px;color:var(--text-mid)">Erneut versuchen</div><input type="file" id="tr-pdf-input" accept=".pdf" style="display:none" onchange="handleTRPdf(this.files[0])">';
+  }
+}
+
+function saveTRImport(){
+  let added=0,updated=0;
+  trParsed.forEach(p=>{
+    const ticker=(p.ticker||p.isin||'').toUpperCase();if(!ticker)return;
+    const existing=data.aktien.find(a=>a.ticker===ticker);
+    const item={id:existing?.id||uid(),ticker,name:p.name||ticker,shares:p.shares||0,buy:p.avgBuy||p.lastPrice||0,price:p.lastPrice||p.avgBuy||0};
+    if(existing){Object.assign(existing,item);updated++;}else{data.aktien.push(item);added++;}
+  });
+  save();closeTRModal();renderAktien();updateSidebar();
+  if(added||updated)setTimeout(()=>alert('✓ '+added+' neu hinzugefügt, '+updated+' aktualisiert.'),100);
+}
+
 // ── SAVE ENTRY ────────────────────────────────────────────────────────────────
 function saveEntry(){
   const cat=currentCat,item=readForm(cat);
@@ -1481,7 +1740,7 @@ function saveEntry(){
 }
 
 // close overlays on backdrop click
-['modal-overlay','hyp-overlay','rent-overlay','csv-overlay','metal-overlay','pdf-overlay','aktien-pdf-overlay'].forEach(id=>{
+['modal-overlay','hyp-overlay','rent-overlay','csv-overlay','metal-overlay','pdf-overlay','aktien-pdf-overlay','tr-overlay','export-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')});
 });
 
