@@ -273,7 +273,6 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
       <div class="sync-dot" id="sync-dot" title="Sync-Status"></div>
       <span style="font-size:10px;color:var(--text-dim);flex:1" id="sync-lbl">Synology</span>
-      <button onclick="openApiKeyModal()" title="Anthropic API-Key" style="background:none;border:none;cursor:pointer;padding:2px 4px;font-size:11px;color:var(--text-dim);border-radius:4px" id="api-key-btn">🔑</button>
     </div>
     <div style="font-size:9px;color:var(--text-dim);margin-bottom:10px" id="sync-time"></div>
     <div class="lbl">Bruttovermögen</div>
@@ -603,7 +602,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div id="tr-pdf-pane" style="display:none">
       <div class="info-bar" style="margin-bottom:14px;font-size:11px">
         Trade Republic App → Profil → Dokumente → Vermögensübersicht (PDF) exportieren &amp; hier hochladen.<br>
-        <span id="tr-pdf-key-info"></span>
+        <strong>Voraussetzung:</strong> Diskstation muss grün sein &amp; Anthropic API-Key in <code>finanzuebersicht-api.php</code> eingetragen sein.
       </div>
       <div id="tr-pdf-drop" onclick="document.getElementById('tr-pdf-input').click()"
         style="border:1px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:14px">
@@ -625,37 +624,6 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeTRModal()">Abbrechen</button>
       <button class="btn btn-primary" id="tr-save-btn" onclick="saveTRImport()" style="display:none">Übernehmen</button>
-    </div>
-  </div>
-</div>
-
-<!-- API KEY MODAL -->
-<div class="overlay" id="api-key-overlay">
-  <div class="modal" style="max-width:420px">
-    <button class="close-btn" onclick="document.getElementById('api-key-overlay').classList.remove('open')">&#x2715;</button>
-    <h3 style="margin-bottom:4px">🔑 KI API-Key</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px">
-        <div style="font-weight:600;color:var(--green);margin-bottom:4px">✓ Google Gemini — KOSTENLOS</div>
-        <div style="color:var(--text-dim)">aistudio.google.com → Get API key</div>
-        <div style="color:var(--text-dim);margin-top:2px">Key beginnt mit <code style="color:var(--text)">AIza</code></div>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px">
-        <div style="font-weight:600;color:var(--text-dim);margin-bottom:4px">Anthropic — kostenpflichtig</div>
-        <div style="color:var(--text-dim)">console.anthropic.com → API Keys</div>
-        <div style="color:var(--text-dim);margin-top:2px">Key beginnt mit <code style="color:var(--text)">sk-ant-</code></div>
-      </div>
-    </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:6px">API-Key eingeben</label>
-      <input type="password" id="api-key-input" placeholder="AIza… oder sk-ant-…" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
-    </div>
-    <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px">Wird nur lokal in diesem Browser gespeichert — niemals an Dritte übertragen.</p>
-    <div id="api-key-status" style="font-size:11px;margin-bottom:12px;min-height:16px"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" style="color:var(--red)">Löschen</button>
-      <button class="btn btn-ghost" onclick="document.getElementById('api-key-overlay').classList.remove('open')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveApiKey()">Speichern</button>
     </div>
   </div>
 </div>
@@ -1449,76 +1417,11 @@ function edelUnitChange(){
   if(buyEl)buyEl.placeholder=ph[0];if(priceEl)priceEl.placeholder=ph[1];
 }
 
-// ── AI API (Google Gemini free / Anthropic paid / Synology proxy fallback) ───
-function getAnthropicKey(){return localStorage.getItem('anthropic_key')||'';}
-function aiKeyProvider(){const k=getAnthropicKey();return k.startsWith('AIza')?'gemini':k.startsWith('sk-ant-')?'anthropic':'';}
-function openApiKeyModal(){
-  const k=getAnthropicKey();
-  const inp=document.getElementById('api-key-input');
-  if(inp)inp.value=k?'(gespeichert — zum Ändern neu eingeben)':'';
-  const prov=aiKeyProvider();
-  document.getElementById('api-key-status').textContent=prov==='gemini'?'✓ Google Gemini Key gespeichert (kostenlos)':prov==='anthropic'?'✓ Anthropic Key gespeichert (kostenpflichtig)':'Noch kein Key hinterlegt.';
-  document.getElementById('api-key-status').style.color=prov?'var(--green)':'var(--text-dim)';
-  document.getElementById('api-key-overlay').classList.add('open');
-}
-function saveApiKey(){
-  const val=document.getElementById('api-key-input').value.trim();
-  if(!val||val==='(gespeichert — zum Ändern neu eingeben)'){document.getElementById('api-key-overlay').classList.remove('open');return;}
-  if(!val.startsWith('AIza')&&!val.startsWith('sk-ant-')){document.getElementById('api-key-status').textContent='⚠ Ungültig — muss mit AIza (Gemini) oder sk-ant- (Anthropic) beginnen';document.getElementById('api-key-status').style.color='var(--red)';return;}
-  localStorage.setItem('anthropic_key',val);
-  const prov=val.startsWith('AIza')?'Google Gemini (kostenlos)':'Anthropic';
-  document.getElementById('api-key-status').textContent='✓ '+prov+' Key gespeichert!';document.getElementById('api-key-status').style.color='var(--green)';
-  updateApiKeyBtn();
-  setTimeout(()=>document.getElementById('api-key-overlay').classList.remove('open'),800);
-}
-function clearApiKey(){
-  localStorage.removeItem('anthropic_key');
-  document.getElementById('api-key-input').value='';
-  document.getElementById('api-key-status').textContent='Key gelöscht.';document.getElementById('api-key-status').style.color='var(--text-dim)';
-  updateApiKeyBtn();
-}
-function updateApiKeyBtn(){
-  const btn=document.getElementById('api-key-btn');if(!btn)return;
-  const prov=aiKeyProvider();
-  btn.style.color=prov?'var(--green)':'var(--text-dim)';
-  btn.title=prov==='gemini'?'Google Gemini Key gespeichert':prov==='anthropic'?'Anthropic Key gespeichert':'KI API-Key einrichten';
-  const info=document.getElementById('tr-pdf-key-info');
-  if(info){
-    info.innerHTML=prov
-      ?`<span style="color:var(--green)">✓ ${prov==='gemini'?'Google Gemini (kostenlos)':'Anthropic'} — KI-Analyse direkt im Browser.</span> <button onclick="openApiKeyModal()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text-dim);padding:0;text-decoration:underline">ändern</button>`
-      :'<span style="color:var(--gold)">⚠ Kein KI API-Key.</span> <button onclick="openApiKeyModal()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gold);padding:0;text-decoration:underline;font-weight:600">Jetzt einrichten →</button> <span style="color:var(--text-dim)">(kostenlos möglich) oder CSV-Tab verwenden.</span>';
-  }
-}
-async function callGemini(key,payload){
-  const parts=[];
-  const msg=payload.messages[0];
-  if(Array.isArray(msg.content)){
-    for(const c of msg.content){
-      if(c.type==='document'||c.type==='image')parts.push({inline_data:{mime_type:c.source.media_type,data:c.source.data}});
-      else if(c.type==='text')parts.push({text:c.text});
-    }
-  }else{parts.push({text:msg.content});}
-  const body={systemInstruction:{parts:[{text:payload.system||''}]},contents:[{role:'user',parts}],generationConfig:{maxOutputTokens:payload.max_tokens||2000}};
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const json=await r.json();
-  if(!r.ok)throw new Error('Gemini: '+(json?.error?.message||r.status));
-  const text=json?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
-  return{content:[{type:'text',text}]};
-}
+// ── KI-Proxy via Synology ─────────────────────────────────────────────────────
 async function callClaude(payload){
-  const key=getAnthropicKey();
-  if(key){
-    if(key.startsWith('AIza'))return callGemini(key,payload);
-    // Anthropic direct
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(payload)});
-    const json=await r.json();
-    if(!r.ok)throw new Error('Anthropic: '+(json?.error?.message||r.status));
-    return json;
-  }
-  // Fallback: Synology proxy
   const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-AI-Proxy':'1'},body:JSON.stringify(payload)});
   const json=await r.json();
-  if(!r.ok)throw new Error('Proxy: '+(json?.error||r.status));
+  if(!r.ok)throw new Error(json?.error||r.status);
   return json;
 }
 
@@ -1638,7 +1541,6 @@ let trParsed=[], trMode='csv';
 
 function openTRModal(){
   trParsed=[];trMode='csv';
-  updateApiKeyBtn();
   switchTRTab('csv');
   ['tr-csv-status','tr-csv-result','tr-pdf-status','tr-pdf-result'].forEach(id=>{document.getElementById(id).style.display='none'});
   document.getElementById('tr-save-btn').style.display='none';
@@ -1772,16 +1674,10 @@ async function handleTRPdf(file){
   const statusEl=document.getElementById('tr-pdf-status');
   statusEl.style.display='block';
 
-  const hasKey=getAnthropicKey();
-  const syncOk=document.getElementById('sync-dot')?.classList.contains('ok');
-  if(!hasKey&&!syncOk){
-    statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Kein Anthropic API-Key und Synology nicht erreichbar.<br><br><button onclick="openApiKeyModal()" style="background:var(--gold);color:#000;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600;margin-top:8px">🔑 API-Key einrichten</button> <span style="color:var(--text-dim)">oder CSV-Tab verwenden.</span></div>';
-    return;
-  }
 
   dz.style.borderColor='var(--gold-dim)';
   dz.innerHTML='<div style="font-size:24px;margin-bottom:8px">⏳</div><div style="font-size:13px;color:var(--text-mid)">'+file.name+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">Claude analysiert die Vermögensübersicht…</div>';
-  statusEl.innerHTML='<div class="info-bar">⏳ PDF wird von Gemini 1.5 Flash analysiert…</div>';
+  statusEl.innerHTML='<div class="info-bar">⏳ PDF wird analysiert…</div>';
   document.getElementById('tr-pdf-result').style.display='none';
   document.getElementById('tr-save-btn').style.display='none';
   try{
@@ -1829,12 +1725,11 @@ function saveEntry(){
 }
 
 // close overlays on backdrop click
-['modal-overlay','hyp-overlay','rent-overlay','csv-overlay','metal-overlay','pdf-overlay','aktien-pdf-overlay','tr-overlay','export-overlay','api-key-overlay'].forEach(id=>{
+['modal-overlay','hyp-overlay','rent-overlay','csv-overlay','metal-overlay','pdf-overlay','aktien-pdf-overlay','tr-overlay','export-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')});
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-updateApiKeyBtn();
 loadFromRemote();
 </script>
 </body>
