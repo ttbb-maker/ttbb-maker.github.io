@@ -270,6 +270,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
       <div class="sync-dot" id="sync-dot" title="Sync-Status"></div>
       <span style="font-size:10px;color:var(--text-dim);flex:1" id="sync-lbl">Synology</span>
+      <button onclick="openApiKeyModal()" title="Anthropic API-Key" style="background:none;border:none;cursor:pointer;padding:2px 4px;font-size:11px;color:var(--text-dim);border-radius:4px" id="api-key-btn">🔑</button>
     </div>
     <div style="font-size:9px;color:var(--text-dim);margin-bottom:10px" id="sync-time"></div>
     <div class="lbl">Bruttovermögen</div>
@@ -599,8 +600,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div id="tr-pdf-pane" style="display:none">
       <div class="info-bar" style="margin-bottom:14px;font-size:11px">
         Trade Republic App → Profil → Dokumente → Vermögensübersicht (PDF) exportieren &amp; hier hochladen.<br>
-        <strong>Voraussetzung:</strong> Synology muss grün sein &amp; Anthropic API-Key in <code>finanzuebersicht-api.php</code> eingetragen sein.<br>
-        <strong>Ohne Synology:</strong> Bitte den <strong>CSV-Tab</strong> verwenden — funktioniert ohne KI.
+        <span id="tr-pdf-key-info"></span>
       </div>
       <div id="tr-pdf-drop" onclick="document.getElementById('tr-pdf-input').click()"
         style="border:1px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:14px">
@@ -622,6 +622,25 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeTRModal()">Abbrechen</button>
       <button class="btn btn-primary" id="tr-save-btn" onclick="saveTRImport()" style="display:none">Übernehmen</button>
+    </div>
+  </div>
+</div>
+
+<!-- API KEY MODAL -->
+<div class="overlay" id="api-key-overlay">
+  <div class="modal" style="max-width:420px">
+    <button class="close-btn" onclick="document.getElementById('api-key-overlay').classList.remove('open')">&#x2715;</button>
+    <h3 style="margin-bottom:4px">🔑 Anthropic API-Key</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Ermöglicht direkte KI-Analyse von PDFs — ohne Synology. Der Key wird nur lokal im Browser gespeichert und niemals übertragen.</p>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:6px">API-Key (sk-ant-…)</label>
+      <input type="password" id="api-key-input" placeholder="sk-ant-api03-…" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
+    </div>
+    <div id="api-key-status" style="font-size:11px;margin-bottom:12px;min-height:16px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" style="color:var(--red)">Löschen</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('api-key-overlay').classList.remove('open')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">Speichern</button>
     </div>
   </div>
 </div>
@@ -1415,6 +1434,63 @@ function edelUnitChange(){
   if(buyEl)buyEl.placeholder=ph[0];if(priceEl)priceEl.placeholder=ph[1];
 }
 
+// ── ANTHROPIC API (direct browser call or Synology proxy fallback) ───────────
+function getAnthropicKey(){return localStorage.getItem('anthropic_key')||'';}
+function openApiKeyModal(){
+  const k=getAnthropicKey();
+  const inp=document.getElementById('api-key-input');
+  if(inp)inp.value=k?'sk-ant-…(gespeichert)':'';
+  document.getElementById('api-key-status').textContent=k?'✓ API-Key ist gespeichert':'Noch kein Key hinterlegt.';
+  document.getElementById('api-key-status').style.color=k?'var(--green)':'var(--text-dim)';
+  document.getElementById('api-key-overlay').classList.add('open');
+}
+function saveApiKey(){
+  const val=document.getElementById('api-key-input').value.trim();
+  if(!val||val==='sk-ant-…(gespeichert)'){document.getElementById('api-key-overlay').classList.remove('open');return;}
+  if(!val.startsWith('sk-ant-')){document.getElementById('api-key-status').textContent='⚠ Ungültiges Format — muss mit sk-ant- beginnen';document.getElementById('api-key-status').style.color='var(--red)';return;}
+  localStorage.setItem('anthropic_key',val);
+  document.getElementById('api-key-status').textContent='✓ Gespeichert!';document.getElementById('api-key-status').style.color='var(--green)';
+  updateApiKeyBtn();
+  setTimeout(()=>document.getElementById('api-key-overlay').classList.remove('open'),800);
+}
+function clearApiKey(){
+  localStorage.removeItem('anthropic_key');
+  document.getElementById('api-key-input').value='';
+  document.getElementById('api-key-status').textContent='Key gelöscht.';document.getElementById('api-key-status').style.color='var(--text-dim)';
+  updateApiKeyBtn();
+}
+function updateApiKeyBtn(){
+  const btn=document.getElementById('api-key-btn');
+  if(!btn)return;
+  btn.style.color=getAnthropicKey()?'var(--green)':'var(--text-dim)';
+  btn.title=getAnthropicKey()?'Anthropic API-Key gespeichert':'Anthropic API-Key einrichten';
+  const info=document.getElementById('tr-pdf-key-info');
+  if(info){
+    const hasKey=getAnthropicKey();
+    info.innerHTML=hasKey
+      ?'<span style="color:var(--green)">✓ API-Key gespeichert — KI-Analyse direkt im Browser.</span> <button onclick="openApiKeyModal()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text-dim);padding:0;text-decoration:underline">ändern</button>'
+      :'<span style="color:var(--gold)">⚠ Kein Anthropic API-Key.</span> <button onclick="openApiKeyModal()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gold);padding:0;text-decoration:underline;font-weight:600">Jetzt einrichten →</button> <span style="color:var(--text-dim)">oder CSV-Tab verwenden.</span>';
+  }
+}
+async function callClaude(payload){
+  const key=getAnthropicKey();
+  if(key){
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify(payload)
+    });
+    const json=await r.json();
+    if(!r.ok)throw new Error('Anthropic: '+(json?.error?.message||r.status));
+    return json;
+  }
+  // Fallback: Synology proxy
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-AI-Proxy':'1'},body:JSON.stringify(payload)});
+  const json=await r.json();
+  if(!r.ok)throw new Error('Proxy: '+(json?.error||r.status));
+  return json;
+}
+
 // ── PDF IMPORT (via Synology AI-Proxy) ───────────────────────────────────────
 function openPdfImportModal(){
   const sel=document.getElementById('pdf-immo');
@@ -1439,16 +1515,11 @@ async function handlePdfFile(file){
   try{
     const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
     const isImage=file.type.startsWith('image/'),mediaType=isImage?file.type:'application/pdf';
-    const response=await fetch(API_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-AI-Proxy':'1'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',max_tokens:1000,
-        system:`Du bist ein Finanzassistent der Darlehensverträge analysiert. Extrahiere folgende Daten und antworte NUR mit einem JSON-Objekt, kein Markdown, keine Erklärung:\n{"bank":"Name der Bank","zinssatz":2.35,"betrag":250000,"monatlicheRate":1100,"startDate":"2022-03-15","endDate":"2032-03-15"}\nFehlende Felder: null. Zinssatz als Dezimalzahl. Beträge ohne Währungszeichen. Daten als ISO YYYY-MM-DD.`,
-        messages:[{role:'user',content:[{type:isImage?'image':'document',source:{type:'base64',media_type:mediaType,data:base64}},{type:'text',text:'Bitte extrahiere alle Darlehensdaten aus diesem Vertrag.'}]}]
-      })
+    const result=await callClaude({
+      model:'claude-sonnet-4-6',max_tokens:1000,
+      system:`Du bist ein Finanzassistent der Darlehensverträge analysiert. Extrahiere folgende Daten und antworte NUR mit einem JSON-Objekt, kein Markdown, keine Erklärung:\n{"bank":"Name der Bank","zinssatz":2.35,"betrag":250000,"monatlicheRate":1100,"startDate":"2022-03-15","endDate":"2032-03-15"}\nFehlende Felder: null. Zinssatz als Dezimalzahl. Beträge ohne Währungszeichen. Daten als ISO YYYY-MM-DD.`,
+      messages:[{role:'user',content:[{type:isImage?'image':'document',source:{type:'base64',media_type:mediaType,data:base64}},{type:'text',text:'Bitte extrahiere alle Darlehensdaten aus diesem Vertrag.'}]}]
     });
-    const result=await response.json();
     const raw=result?.content?.map(c=>c.text||'').join('').trim();
     const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
     const s=(id,v)=>{const e=document.getElementById(id);if(e&&v!=null)e.value=v};
@@ -1501,16 +1572,11 @@ async function handleAktienPdf(file){
   try{
     const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
     const isImage=file.type.startsWith('image/'),mediaType=isImage?file.type:'application/pdf';
-    const response=await fetch(API_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-AI-Proxy':'1'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',max_tokens:2000,
-        system:`Du analysierst Depotauszüge. Extrahiere ALLE Wertpapierpositionen. Antworte NUR mit JSON-Array:\n[{"ticker":"AAPL","name":"Apple Inc.","shares":10.5,"buyPrice":145.00,"currentPrice":182.50}]\nRegeln: ticker=Börsenkürzel, shares=Anteile, buyPrice/currentPrice in EUR, deutsche Aktien mit .DE Suffix, fehlende Werte als null`,
-        messages:[{role:'user',content:[{type:isImage?'image':'document',source:{type:'base64',media_type:mediaType,data:base64}},{type:'text',text:'Bitte extrahiere alle Wertpapierpositionen aus diesem Depotauszug.'}]}]
-      })
+    const result=await callClaude({
+      model:'claude-sonnet-4-6',max_tokens:2000,
+      system:`Du analysierst Depotauszüge. Extrahiere ALLE Wertpapierpositionen. Antworte NUR mit JSON-Array:\n[{"ticker":"AAPL","name":"Apple Inc.","shares":10.5,"buyPrice":145.00,"currentPrice":182.50}]\nRegeln: ticker=Börsenkürzel, shares=Anteile, buyPrice/currentPrice in EUR, deutsche Aktien mit .DE Suffix, fehlende Werte als null`,
+      messages:[{role:'user',content:[{type:isImage?'image':'document',source:{type:'base64',media_type:mediaType,data:base64}},{type:'text',text:'Bitte extrahiere alle Wertpapierpositionen aus diesem Depotauszug.'}]}]
     });
-    const result=await response.json();
     const raw=result?.content?.map(c=>c.text||'').join('').trim();
     aktienPdfParsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
     if(!Array.isArray(aktienPdfParsed)||!aktienPdfParsed.length)throw new Error('Keine Positionen gefunden');
@@ -1541,6 +1607,7 @@ let trParsed=[], trMode='csv';
 
 function openTRModal(){
   trParsed=[];trMode='csv';
+  updateApiKeyBtn();
   switchTRTab('csv');
   ['tr-csv-status','tr-csv-result','tr-pdf-status','tr-pdf-result'].forEach(id=>{document.getElementById(id).style.display='none'});
   document.getElementById('tr-save-btn').style.display='none';
@@ -1674,10 +1741,10 @@ async function handleTRPdf(file){
   const statusEl=document.getElementById('tr-pdf-status');
   statusEl.style.display='block';
 
-  // Synology erreichbar?
+  const hasKey=getAnthropicKey();
   const syncOk=document.getElementById('sync-dot')?.classList.contains('ok');
-  if(!syncOk){
-    statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Synology nicht erreichbar — der KI-Proxy wird benötigt.<br><br>Bitte zuerst den CSV-Tab nutzen, oder den Anthropic API-Key in <code>finanzuebersicht-api.php</code> auf der Synology eintragen.</div>';
+  if(!hasKey&&!syncOk){
+    statusEl.innerHTML='<div class="info-bar" style="color:var(--red)">✗ Kein Anthropic API-Key und Synology nicht erreichbar.<br><br><button onclick="openApiKeyModal()" style="background:var(--gold);color:#000;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600;margin-top:8px">🔑 API-Key einrichten</button> <span style="color:var(--text-dim)">oder CSV-Tab verwenden.</span></div>';
     return;
   }
 
@@ -1688,19 +1755,14 @@ async function handleTRPdf(file){
   document.getElementById('tr-save-btn').style.display='none';
   try{
     const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
-    const response=await fetch(API_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-AI-Proxy':'1'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',max_tokens:3000,
-        system:`Du analysierst eine Trade Republic Vermögensübersicht (PDF). Extrahiere alle Wertpapierpositionen aus dem Abschnitt BROKERAGE. Jede Position hat: Stück/Anteile, Wertpapierbezeichnung, ISIN (steht im Format "ISIN: XX..."), Kurs pro Stück. Antworte NUR mit einem JSON-Array:\n[{"ticker":"BASF","name":"BASF SE","isin":"DE000BASF111","shares":5,"currentPrice":54.25}]\nRegeln: ticker=Börsensymbol (aus ISIN ableiten wenn möglich, sonst erste Buchstaben des Namens), shares=Stückzahl als Zahl, currentPrice=Kurs pro Stück als Zahl in EUR (Komma als Dezimaltrennzeichen beachten), ISIN aus dem PDF-Text lesen.`,
-        messages:[{role:'user',content:[
-          {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
-          {type:'text',text:'Bitte extrahiere alle Wertpapierpositionen aus dieser Trade Republic Vermögensübersicht.'}
-        ]}]
-      })
+    const result=await callClaude({
+      model:'claude-sonnet-4-6',max_tokens:3000,
+      system:`Du analysierst eine Trade Republic Vermögensübersicht (PDF). Extrahiere alle Wertpapierpositionen aus dem Abschnitt BROKERAGE. Jede Position hat: Stück/Anteile, Wertpapierbezeichnung, ISIN (steht im Format "ISIN: XX..."), Kurs pro Stück. Antworte NUR mit einem JSON-Array:\n[{"ticker":"BASF","name":"BASF SE","isin":"DE000BASF111","shares":5,"currentPrice":54.25}]\nRegeln: ticker=Börsensymbol (aus ISIN ableiten wenn möglich, sonst erste Buchstaben des Namens), shares=Stückzahl als Zahl, currentPrice=Kurs pro Stück als Zahl in EUR (Komma als Dezimaltrennzeichen beachten), ISIN aus dem PDF-Text lesen.`,
+      messages:[{role:'user',content:[
+        {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+        {type:'text',text:'Bitte extrahiere alle Wertpapierpositionen aus dieser Trade Republic Vermögensübersicht.'}
+      ]}]
     });
-    const result=await response.json();
     const raw=result?.content?.map(c=>c.text||'').join('').trim();
     const positions=JSON.parse(raw.replace(/```json|```/g,'').trim());
     if(!Array.isArray(positions)||!positions.length)throw new Error('Keine Positionen gefunden');
@@ -1736,11 +1798,12 @@ function saveEntry(){
 }
 
 // close overlays on backdrop click
-['modal-overlay','hyp-overlay','rent-overlay','csv-overlay','metal-overlay','pdf-overlay','aktien-pdf-overlay','tr-overlay','export-overlay'].forEach(id=>{
+['modal-overlay','hyp-overlay','rent-overlay','csv-overlay','metal-overlay','pdf-overlay','aktien-pdf-overlay','tr-overlay','export-overlay','api-key-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')});
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+updateApiKeyBtn();
 loadFromRemote();
 </script>
 </body>
