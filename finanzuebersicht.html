@@ -630,12 +630,24 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
 <div class="overlay" id="api-key-overlay">
   <div class="modal" style="max-width:420px">
     <button class="close-btn" onclick="document.getElementById('api-key-overlay').classList.remove('open')">&#x2715;</button>
-    <h3 style="margin-bottom:4px">🔑 Anthropic API-Key</h3>
-    <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Ermöglicht direkte KI-Analyse von PDFs — ohne Synology. Der Key wird nur lokal im Browser gespeichert und niemals übertragen.</p>
-    <div style="margin-bottom:12px">
-      <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:6px">API-Key (sk-ant-…)</label>
-      <input type="password" id="api-key-input" placeholder="sk-ant-api03-…" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
+    <h3 style="margin-bottom:4px">🔑 KI API-Key</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px">
+        <div style="font-weight:600;color:var(--green);margin-bottom:4px">✓ Google Gemini — KOSTENLOS</div>
+        <div style="color:var(--text-dim)">aistudio.google.com → Get API key</div>
+        <div style="color:var(--text-dim);margin-top:2px">Key beginnt mit <code style="color:var(--text)">AIza</code></div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px">
+        <div style="font-weight:600;color:var(--text-dim);margin-bottom:4px">Anthropic — kostenpflichtig</div>
+        <div style="color:var(--text-dim)">console.anthropic.com → API Keys</div>
+        <div style="color:var(--text-dim);margin-top:2px">Key beginnt mit <code style="color:var(--text)">sk-ant-</code></div>
+      </div>
     </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:6px">API-Key eingeben</label>
+      <input type="password" id="api-key-input" placeholder="AIza… oder sk-ant-…" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
+    </div>
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px">Wird nur lokal in diesem Browser gespeichert — niemals an Dritte übertragen.</p>
     <div id="api-key-status" style="font-size:11px;margin-bottom:12px;min-height:16px"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" style="color:var(--red)">Löschen</button>
@@ -1434,22 +1446,25 @@ function edelUnitChange(){
   if(buyEl)buyEl.placeholder=ph[0];if(priceEl)priceEl.placeholder=ph[1];
 }
 
-// ── ANTHROPIC API (direct browser call or Synology proxy fallback) ───────────
+// ── AI API (Google Gemini free / Anthropic paid / Synology proxy fallback) ───
 function getAnthropicKey(){return localStorage.getItem('anthropic_key')||'';}
+function aiKeyProvider(){const k=getAnthropicKey();return k.startsWith('AIza')?'gemini':k.startsWith('sk-ant-')?'anthropic':'';}
 function openApiKeyModal(){
   const k=getAnthropicKey();
   const inp=document.getElementById('api-key-input');
-  if(inp)inp.value=k?'sk-ant-…(gespeichert)':'';
-  document.getElementById('api-key-status').textContent=k?'✓ API-Key ist gespeichert':'Noch kein Key hinterlegt.';
-  document.getElementById('api-key-status').style.color=k?'var(--green)':'var(--text-dim)';
+  if(inp)inp.value=k?'(gespeichert — zum Ändern neu eingeben)':'';
+  const prov=aiKeyProvider();
+  document.getElementById('api-key-status').textContent=prov==='gemini'?'✓ Google Gemini Key gespeichert (kostenlos)':prov==='anthropic'?'✓ Anthropic Key gespeichert (kostenpflichtig)':'Noch kein Key hinterlegt.';
+  document.getElementById('api-key-status').style.color=prov?'var(--green)':'var(--text-dim)';
   document.getElementById('api-key-overlay').classList.add('open');
 }
 function saveApiKey(){
   const val=document.getElementById('api-key-input').value.trim();
-  if(!val||val==='sk-ant-…(gespeichert)'){document.getElementById('api-key-overlay').classList.remove('open');return;}
-  if(!val.startsWith('sk-ant-')){document.getElementById('api-key-status').textContent='⚠ Ungültiges Format — muss mit sk-ant- beginnen';document.getElementById('api-key-status').style.color='var(--red)';return;}
+  if(!val||val==='(gespeichert — zum Ändern neu eingeben)'){document.getElementById('api-key-overlay').classList.remove('open');return;}
+  if(!val.startsWith('AIza')&&!val.startsWith('sk-ant-')){document.getElementById('api-key-status').textContent='⚠ Ungültig — muss mit AIza (Gemini) oder sk-ant- (Anthropic) beginnen';document.getElementById('api-key-status').style.color='var(--red)';return;}
   localStorage.setItem('anthropic_key',val);
-  document.getElementById('api-key-status').textContent='✓ Gespeichert!';document.getElementById('api-key-status').style.color='var(--green)';
+  const prov=val.startsWith('AIza')?'Google Gemini (kostenlos)':'Anthropic';
+  document.getElementById('api-key-status').textContent='✓ '+prov+' Key gespeichert!';document.getElementById('api-key-status').style.color='var(--green)';
   updateApiKeyBtn();
   setTimeout(()=>document.getElementById('api-key-overlay').classList.remove('open'),800);
 }
@@ -1460,26 +1475,39 @@ function clearApiKey(){
   updateApiKeyBtn();
 }
 function updateApiKeyBtn(){
-  const btn=document.getElementById('api-key-btn');
-  if(!btn)return;
-  btn.style.color=getAnthropicKey()?'var(--green)':'var(--text-dim)';
-  btn.title=getAnthropicKey()?'Anthropic API-Key gespeichert':'Anthropic API-Key einrichten';
+  const btn=document.getElementById('api-key-btn');if(!btn)return;
+  const prov=aiKeyProvider();
+  btn.style.color=prov?'var(--green)':'var(--text-dim)';
+  btn.title=prov==='gemini'?'Google Gemini Key gespeichert':prov==='anthropic'?'Anthropic Key gespeichert':'KI API-Key einrichten';
   const info=document.getElementById('tr-pdf-key-info');
   if(info){
-    const hasKey=getAnthropicKey();
-    info.innerHTML=hasKey
-      ?'<span style="color:var(--green)">✓ API-Key gespeichert — KI-Analyse direkt im Browser.</span> <button onclick="openApiKeyModal()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text-dim);padding:0;text-decoration:underline">ändern</button>'
-      :'<span style="color:var(--gold)">⚠ Kein Anthropic API-Key.</span> <button onclick="openApiKeyModal()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gold);padding:0;text-decoration:underline;font-weight:600">Jetzt einrichten →</button> <span style="color:var(--text-dim)">oder CSV-Tab verwenden.</span>';
+    info.innerHTML=prov
+      ?`<span style="color:var(--green)">✓ ${prov==='gemini'?'Google Gemini (kostenlos)':'Anthropic'} — KI-Analyse direkt im Browser.</span> <button onclick="openApiKeyModal()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text-dim);padding:0;text-decoration:underline">ändern</button>`
+      :'<span style="color:var(--gold)">⚠ Kein KI API-Key.</span> <button onclick="openApiKeyModal()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gold);padding:0;text-decoration:underline;font-weight:600">Jetzt einrichten →</button> <span style="color:var(--text-dim)">(kostenlos möglich) oder CSV-Tab verwenden.</span>';
   }
+}
+async function callGemini(key,payload){
+  const parts=[];
+  const msg=payload.messages[0];
+  if(Array.isArray(msg.content)){
+    for(const c of msg.content){
+      if(c.type==='document'||c.type==='image')parts.push({inline_data:{mime_type:c.source.media_type,data:c.source.data}});
+      else if(c.type==='text')parts.push({text:c.text});
+    }
+  }else{parts.push({text:msg.content});}
+  const body={systemInstruction:{parts:[{text:payload.system||''}]},contents:[{role:'user',parts}],generationConfig:{maxOutputTokens:payload.max_tokens||2000}};
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const json=await r.json();
+  if(!r.ok)throw new Error('Gemini: '+(json?.error?.message||r.status));
+  const text=json?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
+  return{content:[{type:'text',text}]};
 }
 async function callClaude(payload){
   const key=getAnthropicKey();
   if(key){
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify(payload)
-    });
+    if(key.startsWith('AIza'))return callGemini(key,payload);
+    // Anthropic direct
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(payload)});
     const json=await r.json();
     if(!r.ok)throw new Error('Anthropic: '+(json?.error?.message||r.status));
     return json;
