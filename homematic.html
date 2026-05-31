@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Smart Home</title>
+<style>
+  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#d4f547;--accent2:#47b8f5;--text:#f0f0ed;--muted:#6b7080;--danger:#f54747;--warm:#f5a623;--radius:14px; }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:560px;margin:0 auto;padding:0 0 60px 0; }
+  .header { padding:28px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px; }
+  .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
+  .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
+  .header-meta { font-size:11px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:8px; }
+  .sync-dot { width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0; }
+  .sync-dot.ok { background:#47f57a; } .sync-dot.err { background:var(--danger); }
+  .head-btns { display:flex;gap:6px;flex-shrink:0;padding-top:6px; }
+  .icon-btn { background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:10px;width:40px;height:40px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center; }
+  .icon-btn:active { border-color:var(--accent);color:var(--accent); }
+  .icon-btn.active { border-color:var(--accent2);color:var(--accent2); }
+
+  .room { margin:24px 20px 0; }
+  .room-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--text);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px; }
+  .room-title::before { content:'';width:8px;height:8px;background:var(--accent);border-radius:50%; }
+  .tile-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .tile { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;min-height:96px;display:flex;flex-direction:column;transition:border-color .2s,opacity .2s; }
+  .tile.span2 { grid-column:span 2; }
+  .tile.on { border-color:var(--accent); }
+  .tile.unreach { opacity:.4; }
+  .tile-top { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:auto; }
+  .tile-name { font-size:14px;font-weight:700;line-height:1.25; }
+  .tile-icon { font-size:22px;line-height:1;opacity:.9; }
+  .tile-sub { font-size:11px;color:var(--muted);margin-top:2px; }
+  .tile-val { font-size:26px;font-weight:800;color:var(--accent);line-height:1;margin-top:10px; }
+  .tile-val span { font-size:13px;font-weight:600;color:var(--muted);margin-left:2px; }
+
+  .toggle { width:52px;height:30px;border-radius:30px;background:var(--surface);border:1px solid var(--border);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s,border-color .2s; }
+  .toggle::after { content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s; }
+  .toggle.on { background:var(--accent);border-color:var(--accent); }
+  .toggle.on::after { transform:translateX(22px);background:#0e0f11; }
+
+  input[type=range] { -webkit-appearance:none;width:100%;height:6px;border-radius:6px;background:var(--surface);outline:none;margin-top:14px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid var(--card); }
+  input[type=range]::-moz-range-thumb { width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid var(--card); }
+
+  .blind-btns { display:flex;gap:6px;margin-top:12px; }
+  .blind-btns button { flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px;font-size:15px;cursor:pointer; }
+  .blind-btns button:active { border-color:var(--accent);color:var(--accent); }
+
+  .thermo { display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px; }
+  .thermo button { width:38px;height:38px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:20px;cursor:pointer;flex-shrink:0; }
+  .thermo button:active { border-color:var(--warm);color:var(--warm); }
+  .thermo-set { text-align:center;flex:1; }
+  .thermo-set .t { font-size:24px;font-weight:800;color:var(--warm);line-height:1; }
+  .thermo-set .a { font-size:11px;color:var(--muted);margin-top:3px; }
+
+  .prog-btn { margin-top:auto;background:var(--surface);border:1px dashed var(--accent2);color:var(--accent2);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit; }
+  .prog-btn:active { background:var(--accent2);color:#0e0f11; }
+
+  .empty-state { text-align:center;padding:50px 24px;color:var(--muted);font-size:13px;line-height:1.6; }
+  .empty-icon { font-size:44px;margin-bottom:14px;opacity:.4; }
+  .empty-state button { margin-top:18px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:13px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit; }
+
+  /* --- Einrichten --- */
+  .cfg-wrap { padding:20px; }
+  .cfg-note { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px; }
+  .cfg-note b { color:var(--text); }
+  .cfg-room { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px; }
+  .cfg-room-head { display:flex;align-items:center;gap:8px;margin-bottom:10px; }
+  .cfg-room-head input { flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:15px;font-weight:700;padding:9px 12px;outline:none; }
+  .cfg-room-head input:focus { border-color:var(--accent); }
+  .cfg-tile-row { display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:13px; }
+  .cfg-tile-row .ic { font-size:16px; }
+  .cfg-tile-row .nm { flex:1;font-weight:600; }
+  .cfg-tile-row .tp { font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em; }
+  .mini-btn { background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap; }
+  .mini-btn:active { border-color:var(--accent);color:var(--accent); }
+  .mini-btn.del { border-color:transparent;color:var(--danger);font-size:15px;padding:4px 8px; }
+  .cfg-actions { display:flex;gap:8px;flex-wrap:wrap;margin-top:8px; }
+  .btn-primary { background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;width:100%; }
+  .btn-primary:active { opacity:.85; }
+  .btn-ghost { background:transparent;border:1px dashed var(--accent);color:var(--accent);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;width:100%; }
+
+  /* Modal */
+  .modal-bg { position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;justify-content:center;z-index:200; }
+  .modal-bg.show { display:flex; }
+  .modal { background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 0 0;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:20px 20px 30px; }
+  .modal h3 { font-size:16px;margin-bottom:14px; }
+  .modal label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin:12px 0 5px; }
+  .modal select,.modal input[type=text] { width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:11px 12px;outline:none;-webkit-appearance:none; }
+  .modal select:focus,.modal input:focus { border-color:var(--accent); }
+  .modal .row2 { display:flex;gap:8px; }
+  .modal .row2 > * { flex:1; }
+  .seg { display:flex;gap:6px;flex-wrap:wrap;margin-top:6px; }
+  .seg div { background:var(--card);border:1px solid var(--border);border-radius:20px;padding:7px 13px;font-size:13px;cursor:pointer;color:var(--muted); }
+  .seg div.active { background:var(--accent);border-color:var(--accent);color:#0e0f11;font-weight:700; }
+  .modal-btns { display:flex;gap:8px;margin-top:20px; }
+  .modal-btns button { flex:1;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit; }
+  .modal-btns .ok { background:var(--accent);color:#0e0f11;border:none; }
+  .modal-btns .cancel { background:transparent;color:var(--muted);border:1px solid var(--border); }
+
+  .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw;text-align:center; }
+  .toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+  .toast.err { background:var(--danger);color:#fff; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-label">Homematic</div>
+    <h1>Smart Home</h1>
+    <div class="header-meta"><span class="sync-dot" id="syncDot"></span><span id="syncText">verbinde ...</span></div>
+  </div>
+  <div class="head-btns">
+    <button class="icon-btn" id="btnRefresh" title="Aktualisieren" onclick="loadState()">&#8635;</button>
+    <button class="icon-btn" id="btnCfg" title="Einrichten" onclick="toggleConfig()">&#9881;</button>
+  </div>
+</div>
+
+<div id="dashboard"></div>
+<div id="configView" style="display:none;"></div>
+
+<!-- Modal: Kachel hinzufuegen -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Konfiguration: an dein Setup anpassen (muss zum PHP passen) =====
+var API_URL = 'https://tonibader.synology.me/homematic-api.php';
+var API_KEY = 'hm_Xy7Qp2Rm9Lk';
+// =====================================================================
+
+var config   = { rooms: [] };   // Dashboard-Konfiguration (Raeume/Kacheln)
+var state    = {};              // ise_id -> {v,u}
+var devices  = [];              // CCU-Geraeteliste (nur im Einrichten-Modus)
+var programs = [];              // CCU-Programme
+var configMode = false;
+var pollTimer = null;
+
+// ---------- API-Helfer ----------
+async function api(action, opts) {
+  opts = opts || {};
+  var url = API_URL + '?action=' + action;
+  var init = { headers: { 'X-API-Key': API_KEY }, signal: timeoutSignal(9000) };
+  if (opts.body) { init.method = 'POST'; init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(opts.body); }
+  var r = await fetch(url, init);
+  var data = await r.json().catch(function(){ return {}; });
+  if (!r.ok) throw new Error(data.detail || data.error || ('HTTP ' + r.status));
+  return data;
+}
+function timeoutSignal(ms){ var c = new AbortController(); setTimeout(function(){c.abort();}, ms); return c.signal; }
+
+function setSync(ok, txt) {
+  var d = document.getElementById('syncDot');
+  d.className = 'sync-dot ' + (ok ? 'ok' : 'err');
+  document.getElementById('syncText').textContent = txt;
+}
+
+// ---------- Laden ----------
+async function init() {
+  try {
+    config = await api('config');
+    if (!config || !config.rooms) config = { rooms: [] };
+  } catch(e) { config = { rooms: [] }; }
+  await loadState();
+  startPolling();
+}
+
+async function loadState() {
+  try {
+    var d = await api('state');
+    state = d.values || {};
+    setSync(true, 'verbunden');
+    if (!configMode) renderDashboard();
+  } catch(e) {
+    setSync(false, 'CCU offline');
+    if (!configMode) renderDashboard();
+    showToast(e.message, true);
+  }
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(function(){ if (!configMode && document.visibilityState === 'visible') loadState(); }, 12000);
+}
+
+// ---------- Wert-Helfer ----------
+function val(id){ return (state[id] && state[id].v != null) ? state[id].v : null; }
+function isOn(id){ var v = val(id); return v === 'true' || v === '1'; }
+function num(id){ var v = val(id); return v == null ? null : parseFloat(v); }
+function deviceUnreach(iseId){ return iseId && val('unreach_' + iseId) === 'true'; }
+
+var ICONS = { switch:'&#128161;', dimmer:'&#128161;', blind:'&#129695;', thermostat:'&#127777;', sensor:'&#128202;', program:'&#9889;' };
+
+// ===================================================================
+//  DASHBOARD
+// ===================================================================
+function renderDashboard() {
+  var el = document.getElementById('dashboard');
+  if (!config.rooms || !config.rooms.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">&#127968;</div>'
+      + 'Noch keine R&auml;ume eingerichtet.<br>Lege im Einrichten-Modus deine R&auml;ume an<br>und w&auml;hle die Ger&auml;te aus deiner CCU.'
+      + '<br><button onclick="toggleConfig()">&#9881; Jetzt einrichten</button></div>';
+    return;
+  }
+  el.innerHTML = config.rooms.map(function(room){
+    var tiles = (room.tiles || []).map(renderTile).join('');
+    return '<div class="room"><div class="room-title">' + esc(room.name) + '</div><div class="tile-grid">' + tiles + '</div></div>';
+  }).join('');
+}
+
+function renderTile(t) {
+  var un = deviceUnreach(t.deviceIse);
+  var cls = 'tile' + (un ? ' unreach' : '');
+  var ic = '<span class="tile-icon">' + (ICONS[t.type] || '&#9881;') + '</span>';
+  var head;
+
+  if (t.type === 'switch') {
+    var on = isOn(t.dp.STATE);
+    return '<div class="' + cls + (on ? ' on' : '') + '">'
+      + '<div class="tile-top"><div><div class="tile-name">' + esc(t.name) + '</div><div class="tile-sub">' + (on ? 'Ein' : 'Aus') + '</div></div>'
+      + '<div class="toggle' + (on ? ' on' : '') + '" onclick="toggleSwitch(\'' + t.dp.STATE + '\',' + (on ? 'false' : 'true') + ')"></div></div></div>';
+  }
+
+  if (t.type === 'dimmer') {
+    var lvl = Math.round((num(t.dp.LEVEL) || 0) * 100);
+    return '<div class="' + cls + (lvl > 0 ? ' on' : '') + ' span2">'
+      + '<div class="tile-top"><div><div class="tile-name">' + esc(t.name) + '</div><div class="tile-sub">' + lvl + ' %</div></div>' + ic + '</div>'
+      + '<input type="range" min="0" max="100" value="' + lvl + '" oninput="this.previousElementSibling.querySelector(\'.tile-sub\').textContent=this.value+\' %\'" onchange="setLevel(\'' + t.dp.LEVEL + '\',this.value)"></div>';
+  }
+
+  if (t.type === 'blind') {
+    var blvl = Math.round((num(t.dp.LEVEL) || 0) * 100);
+    var stopBtn = t.dp.STOP ? '<button onclick="stopBlind(\'' + t.dp.STOP + '\')">&#9632;</button>' : '';
+    return '<div class="' + cls + ' span2">'
+      + '<div class="tile-top"><div><div class="tile-name">' + esc(t.name) + '</div><div class="tile-sub">' + blvl + ' % offen</div></div>' + ic + '</div>'
+      + '<div class="blind-btns"><button onclick="setLevel(\'' + t.dp.LEVEL + '\',100)">&#9650;</button>' + stopBtn + '<button onclick="setLevel(\'' + t.dp.LEVEL + '\',0)">&#9660;</button></div>'
+      + '<input type="range" min="0" max="100" value="' + blvl + '" onchange="setLevel(\'' + t.dp.LEVEL + '\',this.value)"></div>';
+  }
+
+  if (t.type === 'thermostat') {
+    var set = num(t.dp.SET); var act = t.dp.ACTUAL ? num(t.dp.ACTUAL) : null;
+    var setTxt = set == null ? '--' : set.toFixed(1);
+    var actTxt = act == null ? '' : 'Ist: ' + act.toFixed(1) + ' &#176;C';
+    return '<div class="' + cls + ' span2">'
+      + '<div class="tile-top"><div><div class="tile-name">' + esc(t.name) + '</div><div class="tile-sub">' + actTxt + '</div></div>' + ic + '</div>'
+      + '<div class="thermo"><button onclick="adjustTemp(\'' + t.dp.SET + '\',' + (set == null ? 20 : set) + ',-0.5)">&minus;</button>'
+      + '<div class="thermo-set"><div class="t">' + setTxt + ' &#176;C</div><div class="a">Soll</div></div>'
+      + '<button onclick="adjustTemp(\'' + t.dp.SET + '\',' + (set == null ? 20 : set) + ',0.5)">+</button></div></div>';
+  }
+
+  if (t.type === 'sensor') {
+    var v = val(t.dp.VAL);
+    var disp = v == null ? '--' : (isNaN(parseFloat(v)) ? (v === 'true' ? 'Ja' : v === 'false' ? 'Nein' : v) : parseFloat(v).toLocaleString('de-DE'));
+    var unit = t.unit || (state[t.dp.VAL] && state[t.dp.VAL].u) || '';
+    return '<div class="' + cls + '"><div class="tile-top"><div class="tile-name">' + esc(t.name) + '</div>' + ic + '</div>'
+      + '<div class="tile-val">' + disp + (unit ? '<span>' + esc(unit) + '</span>' : '') + '</div></div>';
+  }
+
+  if (t.type === 'program') {
+    return '<div class="tile"><div class="tile-top"><div class="tile-name">' + esc(t.name) + '</div>' + ic + '</div>'
+      + '<button class="prog-btn" onclick="runProgram(\'' + t.prog + '\',this)">Ausl&ouml;sen</button></div>';
+  }
+  return '';
+}
+
+// ---------- Steuer-Aktionen ----------
+async function cmd(action, body, okMsg) {
+  try {
+    await api(action, { body: body });
+    if (okMsg) showToast(okMsg);
+    setTimeout(loadState, 700);
+    return true;
+  } catch(e) { showToast('Fehler: ' + e.message, true); loadState(); return false; }
+}
+function toggleSwitch(id, on){ cmd('set', { ise_id:id, value:on }); }
+function setLevel(id, pct){ cmd('set', { ise_id:id, value:(Math.max(0,Math.min(100,parseFloat(pct)))/100).toFixed(2) }); }
+function stopBlind(id){ cmd('set', { ise_id:id, value:true }); }
+function adjustTemp(id, cur, delta){ var n = Math.round((cur + delta) * 2) / 2; cmd('set', { ise_id:id, value:n.toFixed(1) }); }
+function runProgram(id, btn){ btn.textContent = '...'; cmd('program', { ise_id:id }, 'Ausgelöst').then(function(){ btn.textContent = 'Auslösen'; }); }
+
+// ===================================================================
+//  EINRICHTEN
+// ===================================================================
+async function toggleConfig() {
+  configMode = !configMode;
+  document.getElementById('btnCfg').classList.toggle('active', configMode);
+  document.getElementById('dashboard').style.display = configMode ? 'none' : 'block';
+  document.getElementById('configView').style.display = configMode ? 'block' : 'none';
+  if (configMode) {
+    document.getElementById('configView').innerHTML = '<div class="cfg-wrap"><div class="cfg-note">Lade Ger&auml;te aus der CCU ...</div></div>';
+    try {
+      var dd = await api('devices'); devices = dd.devices || [];
+      try { var pp = await api('programs'); programs = pp.programs || []; } catch(e) { programs = []; }
+      renderConfig();
+    } catch(e) {
+      document.getElementById('configView').innerHTML = '<div class="cfg-wrap"><div class="cfg-note" style="color:var(--danger)">CCU nicht erreichbar: ' + esc(e.message) + '<br><br>Pr&uuml;fe im PHP <b>CCU_HOST</b> und ob das <b>XML-API-Addon</b> installiert ist.</div></div>';
+    }
+  } else {
+    renderDashboard();
+  }
+}
+
+function renderConfig() {
+  var rooms = (config.rooms || []).map(function(room, ri){
+    var tiles = (room.tiles || []).map(function(t, ti){
+      return '<div class="cfg-tile-row"><span class="ic">' + (ICONS[t.type] || '&#9881;') + '</span>'
+        + '<span class="nm">' + esc(t.name) + '</span><span class="tp">' + t.type + '</span>'
+        + '<button class="mini-btn del" onclick="delTile(' + ri + ',' + ti + ')">&#10005;</button></div>';
+    }).join('') || '<div class="cfg-tile-row" style="color:var(--muted);justify-content:center;">noch keine Ger&auml;te</div>';
+    return '<div class="cfg-room">'
+      + '<div class="cfg-room-head"><input value="' + esc(room.name) + '" onchange="renameRoom(' + ri + ',this.value)" placeholder="Raumname">'
+      + '<button class="mini-btn del" onclick="delRoom(' + ri + ')">&#10005;</button></div>'
+      + tiles
+      + '<div class="cfg-actions"><button class="mini-btn" onclick="openTileModal(' + ri + ')">+ Ger&auml;t</button>'
+      + (programs.length ? '<button class="mini-btn" onclick="openProgModal(' + ri + ')">+ Programm</button>' : '')
+      + '</div></div>';
+  }).join('');
+
+  document.getElementById('configView').innerHTML = '<div class="cfg-wrap">'
+    + '<div class="cfg-note"><b>Einrichten:</b> Lege R&auml;ume an und f&uuml;ge Ger&auml;te aus deiner CCU hinzu '
+    + '(<b>' + devices.length + '</b> Ger&auml;te gefunden). Am Ende <b>Speichern</b> nicht vergessen.</div>'
+    + rooms
+    + '<button class="btn-ghost" style="margin-bottom:12px;" onclick="addRoom()">+ Raum hinzuf&uuml;gen</button>'
+    + '<button class="btn-primary" onclick="saveConfig()">&#128190; Konfiguration speichern</button>'
+    + '</div>';
+}
+
+function addRoom(){ config.rooms.push({ name:'Neuer Raum', tiles:[] }); renderConfig(); }
+function delRoom(ri){ if(confirm('Raum löschen?')){ config.rooms.splice(ri,1); renderConfig(); } }
+function renameRoom(ri, v){ config.rooms[ri].name = v; }
+function delTile(ri, ti){ config.rooms[ri].tiles.splice(ti,1); renderConfig(); }
+
+async function saveConfig() {
+  try { await api('config', { body: config }); showToast('Gespeichert!'); }
+  catch(e) { showToast('Speichern fehlgeschlagen: ' + e.message, true); }
+}
+
+// ---------- Modal: Geraet/Kachel ----------
+function dpByType(channel, types) {
+  for (var i=0;i<types.length;i++) for (var j=0;j<channel.datapoints.length;j++)
+    if (channel.datapoints[j].type === types[i]) return channel.datapoints[j].ise_id;
+  return null;
+}
+function detectType(channel) {
+  if (dpByType(channel, ['SET_TEMPERATURE','SET_POINT_TEMPERATURE'])) return 'thermostat';
+  if (dpByType(channel, ['LEVEL'])) return 'dimmer';
+  if (dpByType(channel, ['STATE'])) {
+    var dp = channel.datapoints.find(function(d){ return d.type === 'STATE'; });
+    return (dp && dp.vtype === '2') ? 'switch' : 'sensor';
+  }
+  return 'sensor';
+}
+
+var modalState = {};
+function openTileModal(ri) {
+  modalState = { ri: ri, type: null };
+  var devOpts = devices.map(function(d, i){ return '<option value="' + i + '">' + esc(d.name) + (d.unreach ? ' (offline)' : '') + '</option>'; }).join('');
+  document.getElementById('modalBox').innerHTML =
+      '<h3>Ger&auml;t hinzuf&uuml;gen</h3>'
+    + '<label>Ger&auml;t</label><select id="mDev" onchange="onDevChange()"><option value="">&mdash; w&auml;hlen &mdash;</option>' + devOpts + '</select>'
+    + '<div id="mChanWrap" style="display:none;"><label>Kanal</label><select id="mChan" onchange="onChanChange()"></select></div>'
+    + '<div id="mTypeWrap" style="display:none;"><label>Anzeige als</label><div class="seg" id="mSeg"></div></div>'
+    + '<div id="mDpWrap"></div>'
+    + '<div id="mNameWrap" style="display:none;"><label>Name</label><input type="text" id="mName" placeholder="Anzeigename"></div>'
+    + '<div class="modal-btns"><button class="cancel" onclick="closeModal()">Abbrechen</button><button class="ok" onclick="saveTile()">Hinzuf&uuml;gen</button></div>';
+  showModal();
+}
+function onDevChange() {
+  var di = document.getElementById('mDev').value;
+  var wrap = document.getElementById('mChanWrap');
+  if (di === '') { wrap.style.display='none'; return; }
+  modalState.di = parseInt(di);
+  var dev = devices[modalState.di];
+  document.getElementById('mChan').innerHTML = dev.channels.map(function(c,i){
+    return '<option value="' + i + '">' + esc(c.name || ('Kanal ' + i)) + '</option>';
+  }).join('');
+  wrap.style.display='block';
+  onChanChange();
+}
+function onChanChange() {
+  var ci = parseInt(document.getElementById('mChan').value);
+  modalState.ci = ci;
+  var chan = devices[modalState.di].channels[ci];
+  var detected = detectType(chan);
+  modalState.type = detected;
+  var types = ['switch','dimmer','blind','thermostat','sensor'];
+  document.getElementById('mSeg').innerHTML = types.map(function(t){
+    return '<div class="' + (t===detected?'active':'') + '" onclick="pickType(\'' + t + '\')">' + segLabel(t) + '</div>';
+  }).join('');
+  document.getElementById('mTypeWrap').style.display='block';
+  document.getElementById('mNameWrap').style.display='block';
+  document.getElementById('mName').value = chan.name || devices[modalState.di].name;
+  buildDpFields();
+}
+function segLabel(t){ return ({switch:'Schalter',dimmer:'Dimmer',blind:'Rollladen',thermostat:'Heizung',sensor:'Sensor'})[t]; }
+function pickType(t) {
+  modalState.type = t;
+  document.querySelectorAll('#mSeg div').forEach(function(d){ d.classList.toggle('active', d.textContent===segLabel(t)); });
+  buildDpFields();
+}
+function buildDpFields() {
+  var chan = devices[modalState.di].channels[modalState.ci];
+  var opts = chan.datapoints.map(function(d){ return '<option value="' + d.ise_id + '">' + esc(d.type) + (d.value!==''?' ('+esc(d.value)+(d.unit?' '+esc(d.unit):'')+')':'') + '</option>'; }).join('');
+  var html = '';
+  var t = modalState.type;
+  function sel(id, label, preferred){ var pre = preferred ? dpByType(chan, preferred) : null; return '<label>' + label + '</label><select id="' + id + '">' + opts.replace('value="' + pre + '"', 'value="' + pre + '" selected') + '</select>'; }
+  if (t === 'switch') html = sel('dpSTATE','Schalt-Datenpunkt',['STATE']);
+  else if (t === 'dimmer') html = sel('dpLEVEL','Helligkeit (LEVEL)',['LEVEL']);
+  else if (t === 'blind') html = sel('dpLEVEL','Position (LEVEL)',['LEVEL']) + sel('dpSTOP','Stopp (optional)',['STOP']);
+  else if (t === 'thermostat') html = sel('dpSET','Soll-Temperatur',['SET_TEMPERATURE','SET_POINT_TEMPERATURE']) + sel('dpACTUAL','Ist-Temperatur (optional)',['ACTUAL_TEMPERATURE','TEMPERATURE']);
+  else if (t === 'sensor') html = sel('dpVAL','Anzuzeigender Wert',['ACTUAL_TEMPERATURE','TEMPERATURE','HUMIDITY','STATE','LEVEL']);
+  document.getElementById('mDpWrap').innerHTML = html;
+}
+function saveTile() {
+  var t = modalState.type, name = (document.getElementById('mName').value || '').trim() || 'Gerät';
+  var deviceIse = devices[modalState.di].ise_id;
+  var tile = { name:name, type:t, deviceIse:deviceIse, dp:{} };
+  function g(id){ var e = document.getElementById(id); return e ? e.value : null; }
+  if (t === 'switch') tile.dp.STATE = g('dpSTATE');
+  else if (t === 'dimmer') tile.dp.LEVEL = g('dpLEVEL');
+  else if (t === 'blind') { tile.dp.LEVEL = g('dpLEVEL'); if (g('dpSTOP')) tile.dp.STOP = g('dpSTOP'); }
+  else if (t === 'thermostat') { tile.dp.SET = g('dpSET'); if (g('dpACTUAL')) tile.dp.ACTUAL = g('dpACTUAL'); }
+  else if (t === 'sensor') { tile.dp.VAL = g('dpVAL'); var dp = devices[modalState.di].channels[modalState.ci].datapoints.find(function(d){return d.ise_id===tile.dp.VAL;}); if (dp && dp.unit) tile.unit = dp.unit; }
+  config.rooms[modalState.ri].tiles.push(tile);
+  closeModal(); renderConfig();
+}
+
+function openProgModal(ri) {
+  modalState = { ri: ri };
+  var opts = programs.map(function(p){ return '<option value="' + p.ise_id + '">' + esc(p.name) + '</option>'; }).join('');
+  document.getElementById('modalBox').innerHTML =
+      '<h3>Programm / Szene</h3>'
+    + '<label>CCU-Programm</label><select id="mProg" onchange="document.getElementById(\'mPName\').value=this.options[this.selectedIndex].text">' + opts + '</select>'
+    + '<label>Name</label><input type="text" id="mPName" value="' + (programs[0] ? esc(programs[0].name) : '') + '">'
+    + '<div class="modal-btns"><button class="cancel" onclick="closeModal()">Abbrechen</button><button class="ok" onclick="saveProg()">Hinzuf&uuml;gen</button></div>';
+  showModal();
+}
+function saveProg() {
+  var prog = document.getElementById('mProg').value;
+  var name = (document.getElementById('mPName').value || '').trim() || 'Programm';
+  config.rooms[modalState.ri].tiles.push({ name:name, type:'program', prog:prog });
+  closeModal(); renderConfig();
+}
+
+function showModal(){ document.getElementById('modalBg').classList.add('show'); }
+function closeModal(){ document.getElementById('modalBg').classList.remove('show'); }
+document.getElementById('modalBg').addEventListener('click', function(e){ if (e.target === this) closeModal(); });
+
+// ---------- Util ----------
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function showToast(msg, err){ var t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' err' : ''); setTimeout(function(){ t.classList.remove('show'); }, 2800); }
+
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible' && !configMode) loadState(); });
+init();
+</script>
+</body>
+</html>
