@@ -1226,11 +1226,21 @@ async function updateLivePrices(){
   const btn=document.getElementById('live-btn');
   btn.innerHTML='<span class="spin">⟳</span> Lädt...';btn.disabled=true;
   const symbols=data.aktien.map(x=>x.ticker).join(',');
+  const yahooUrl='https://query1.finance.yahoo.com/v7/finance/quote?symbols='+encodeURIComponent(symbols)+'&lang=de&region=DE';
   try{
-    // Synology proxy (server-seitig, kein CORS-Problem)
-    const res=await fetch(API_URL+'?symbols='+encodeURIComponent(symbols),{headers:{'X-API-Key':API_KEY,'X-Quote-Proxy':'1'}});
-    const json=await res.json();
-    const quotes=json?.quoteResponse?.result||[];
+    let quotes=[];
+    // 1. Synology-Proxy (wenn PHP aktualisiert)
+    try{
+      const res=await fetch(API_URL+'?symbols='+encodeURIComponent(symbols),{headers:{'X-API-Key':API_KEY,'X-Quote-Proxy':'1'},signal:AbortSignal.timeout(6000)});
+      const json=await res.json();
+      if(json?.quoteResponse?.result?.length)quotes=json.quoteResponse.result;
+    }catch(_){}
+    // 2. Fallback: kostenloser CORS-Proxy
+    if(!quotes.length){
+      const res=await fetch('https://corsproxy.io/?'+encodeURIComponent(yahooUrl));
+      const json=await res.json();
+      quotes=json?.quoteResponse?.result||[];
+    }
     let updated=0;
     quotes.forEach(q=>{const a=data.aktien.find(x=>x.ticker===q.symbol);if(a&&q.regularMarketPrice!=null){a.price=Math.round(q.regularMarketPrice*100)/100;updated++}});
     if(updated>0){save();renderAktien();updateSidebar();btn.innerHTML='✓ '+updated+' aktualisiert';}
