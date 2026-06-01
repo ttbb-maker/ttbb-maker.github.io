@@ -1161,14 +1161,15 @@ async function updateLivePrices(){
   btn.innerHTML='<span class="spin">⟳</span> Lädt...';btn.disabled=true;
   const symbols=data.aktien.map(x=>x.ticker).join(',');
   try{
-    const url='https://query1.finance.yahoo.com/v7/finance/quote?symbols='+symbols+'&lang=de&region=DE';
-    const res=await fetch(url);const json=await res.json();
+    // Synology proxy (server-seitig, kein CORS-Problem)
+    const res=await fetch(API_URL+'?symbols='+encodeURIComponent(symbols),{headers:{'X-API-Key':API_KEY,'X-Quote-Proxy':'1'}});
+    const json=await res.json();
     const quotes=json?.quoteResponse?.result||[];
     let updated=0;
     quotes.forEach(q=>{const a=data.aktien.find(x=>x.ticker===q.symbol);if(a&&q.regularMarketPrice!=null){a.price=Math.round(q.regularMarketPrice*100)/100;updated++}});
-    if(updated>0){save();renderAktien();updateSidebar();btn.innerHTML='✓ '+updated+' aktualisiert'}
+    if(updated>0){save();renderAktien();updateSidebar();btn.innerHTML='✓ '+updated+' aktualisiert';}
     else btn.innerHTML='⚠ Keine Kurse';
-  }catch(e){btn.innerHTML='✕ Fehler';alert('Kursabruf fehlgeschlagen.\n\nHinweise:\n• Deutsche Aktien: Ticker mit .DE (z.B. SAP.DE, BMW.DE)\n• US-Aktien: direktes Symbol (AAPL, MSFT)\n• ETFs: z.B. VWCE.DE');}
+  }catch(e){btn.innerHTML='✕ Fehler';console.error(e);}
   setTimeout(()=>{btn.innerHTML='⟳ Live-Kurse';btn.disabled=false},4000);
 }
 
