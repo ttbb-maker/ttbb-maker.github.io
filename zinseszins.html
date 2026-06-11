@@ -52,6 +52,18 @@
 
   .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
   .empty-icon { font-size:40px;margin-bottom:12px;opacity:.4; }
+
+  .chart-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px 12px; }
+  .legend { display:flex;gap:16px;justify-content:center;margin-bottom:12px; }
+  .legend-item { display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted); }
+  .legend-dot { width:11px;height:11px;border-radius:3px; }
+  .legend-dot.einzahlung { background:var(--einzahlung); }
+  .legend-dot.zinsen { background:var(--accent2); }
+  .chart-svg { width:100%;height:auto;display:block;overflow:visible; }
+  .chart-svg .bar-einzahlung { fill:var(--einzahlung); }
+  .chart-svg .bar-zinsen { fill:var(--accent2); }
+  .chart-svg .axis-line { stroke:var(--border);stroke-width:1; }
+  .chart-svg .axis-text { fill:var(--muted);font-size:9px;font-family:inherit; }
 </style>
 </head>
 <body>
@@ -121,6 +133,14 @@
   <div class="result-value" id="endbetrag">0 &#8364;</div>
 </div>
 
+<div class="chart-card" id="chartCard">
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot einzahlung"></span>Einzahlungen</div>
+    <div class="legend-item"><span class="legend-dot zinsen"></span>Zinsen</div>
+  </div>
+  <svg class="chart-svg" id="chartSvg" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Diagramm: Einzahlungen und Zinsen pro Jahr"></svg>
+</div>
+
 <div class="list-title">Jahreswerte</div>
 <div class="jahres-list" id="jahresList">
   <div class="empty-state">
@@ -177,8 +197,10 @@ function berechnen() {
   var list = document.getElementById('jahresList');
   if (jahre === 0) {
     list.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div>Bitte eine Laufzeit von mindestens 1 Jahr angeben.</div>';
+    document.getElementById('chartSvg').innerHTML = '';
     return;
   }
+  renderChart(jahresWerte);
   list.innerHTML = '';
   jahresWerte.forEach(function(w) {
     var card = document.createElement('div');
@@ -195,6 +217,65 @@ function berechnen() {
       '</div>';
     list.appendChild(card);
   });
+}
+
+function kompakt(n) {
+  if (n >= 1000000) return (n / 1000000).toLocaleString('de-DE', {maximumFractionDigits:1}) + ' Mio €';
+  if (n >= 1000)    return Math.round(n / 1000) + ' Tsd €';
+  return Math.round(n) + ' €';
+}
+
+function renderChart(werte) {
+  var svg = document.getElementById('chartSvg');
+  var W = 320, H = 200;
+  var padL = 38, padR = 6, padT = 8, padB = 22;
+  var plotW = W - padL - padR;
+  var plotH = H - padT - padB;
+  var n = werte.length;
+
+  var maxVal = 0;
+  werte.forEach(function(w){ if (w.kapital > maxVal) maxVal = w.kapital; });
+  if (maxVal <= 0) maxVal = 1;
+  // "schöne" Obergrenze für die Achse
+  var step = Math.pow(10, Math.floor(Math.log10(maxVal)));
+  var top = Math.ceil(maxVal / step) * step;
+
+  function y(val){ return padT + plotH - (val / top) * plotH; }
+
+  var gap = n > 1 ? plotW / n * 0.25 : 0;
+  var barW = (plotW - gap * (n - 1)) / n;
+  if (barW > 46) barW = 46;
+
+  var svgNS = 'http://www.w3.org/2000/svg';
+  var parts = [];
+
+  // Horizontale Hilfslinien + Y-Beschriftung (0, 1/2, voll)
+  [0, 0.5, 1].forEach(function(f){
+    var val = top * f;
+    var yy = y(val);
+    parts.push('<line class="axis-line" x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy + '"/>');
+    parts.push('<text class="axis-text" x="' + (padL - 5) + '" y="' + (yy + 3) + '" text-anchor="end">' + kompakt(val) + '</text>');
+  });
+
+  // Labels nur für eine sinnvolle Anzahl Jahre, damit es nicht überläuft
+  var labelEvery = Math.ceil(n / 8);
+
+  werte.forEach(function(w, i){
+    var x = padL + i * (plotW / n) + (plotW / n - barW) / 2;
+    var yEin = y(w.einzahlung);
+    var hEin = (padT + plotH) - yEin;
+    var yZin = y(w.kapital);
+    var hZin = yEin - yZin;
+
+    parts.push('<rect class="bar-einzahlung" x="' + x.toFixed(1) + '" y="' + yEin.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(0, hEin).toFixed(1) + '" rx="1"><title>Jahr ' + w.jahr + ' – Einzahlungen: ' + fmt(w.einzahlung) + '</title></rect>');
+    parts.push('<rect class="bar-zinsen" x="' + x.toFixed(1) + '" y="' + yZin.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(0, hZin).toFixed(1) + '" rx="1"><title>Jahr ' + w.jahr + ' – Zinsen: ' + fmt(w.zinsenGesamt) + '</title></rect>');
+
+    if (i === 0 || i === n - 1 || (i + 1) % labelEvery === 0) {
+      parts.push('<text class="axis-text" x="' + (x + barW / 2).toFixed(1) + '" y="' + (H - padB + 13) + '" text-anchor="middle">' + w.jahr + '</text>');
+    }
+  });
+
+  svg.innerHTML = parts.join('');
 }
 
 berechnen();
