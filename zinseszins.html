@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zinseszins-Rechner</title>
+<style>
+  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#47f57a;--accent2:#47b8f5;--text:#f0f0ed;--muted:#6b7080;--einzahlung:#f5c547;--radius:14px; }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 40px 0; }
+
+  .header { padding:28px 20px 0; }
+  .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
+  .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
+  .header-meta { font-size:11px;color:var(--muted);margin-top:6px; }
+
+  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px; }
+  .form-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+  .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
+  .field-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .field { margin-bottom:10px; }
+  label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:5px; }
+  .input-wrap { position:relative; }
+  .input-wrap .suffix { position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none; }
+  input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 36px 10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none; }
+  input:focus { border-color:var(--accent); }
+  input::placeholder { color:var(--muted); }
+  .btn-add { width:100%;margin-top:14px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer; }
+  .btn-add:active { opacity:.8; }
+
+  .stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:20px 20px 0; }
+  .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center; }
+  .stat-value { font-size:18px;font-weight:700;color:var(--accent);line-height:1; }
+  .stat-value.einzahlung { color:var(--einzahlung); }
+  .stat-value.zinsen { color:var(--accent2); }
+  .stat-label { font-size:9px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.1em; }
+
+  .result-card { margin:20px 20px 0;background:linear-gradient(135deg,var(--card),#171a20);border:1px solid var(--accent);border-radius:var(--radius);padding:22px 20px;text-align:center; }
+  .result-label { font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px; }
+  .result-value { font-size:36px;font-weight:800;color:var(--accent);letter-spacing:-1px;line-height:1; }
+
+  .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;padding:24px 20px 0; }
+  .jahres-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
+  .jahres-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;border-left-width:3px;border-left-color:var(--accent); }
+  .jahres-top { display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px; }
+  .jahres-name { font-size:15px;font-weight:700;color:var(--text); }
+  .jahres-sum { font-size:18px;font-weight:700;color:var(--accent);white-space:nowrap; }
+  .jahres-detail { display:flex;gap:14px;flex-wrap:wrap; }
+  .jahres-detail span { font-size:11px;color:var(--muted); }
+  .jahres-detail b { color:var(--einzahlung);font-weight:600; }
+  .jahres-detail b.zins { color:var(--accent2); }
+
+  .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
+  .empty-icon { font-size:40px;margin-bottom:12px;opacity:.4; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Finanzen</div>
+  <h1>Zinseszins-Rechner</h1>
+  <div class="header-meta">Berechne, wie dein Erspartes mit Zinseszins w&auml;chst</div>
+</div>
+
+<div class="form-card">
+  <div class="form-title">Eingabe</div>
+
+  <div class="field">
+    <label>Startsumme (Sparsumme)</label>
+    <div class="input-wrap">
+      <input type="number" id="start" inputmode="decimal" placeholder="1000" value="1000">
+      <span class="suffix">&#8364;</span>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label>Monatliche Sparsumme</label>
+      <div class="input-wrap">
+        <input type="number" id="monat" inputmode="decimal" placeholder="100" value="100">
+        <span class="suffix">&#8364;</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Zinssatz p.a.</label>
+      <div class="input-wrap">
+        <input type="number" id="zins" inputmode="decimal" step="0.1" placeholder="5" value="5">
+        <span class="suffix">%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Laufzeit</label>
+    <div class="input-wrap">
+      <input type="number" id="jahre" inputmode="numeric" placeholder="10" value="10">
+      <span class="suffix">Jahre</span>
+    </div>
+  </div>
+
+  <button class="btn-add" onclick="berechnen()">Berechnen</button>
+</div>
+
+<div class="stats">
+  <div class="stat-box">
+    <div class="stat-value einzahlung" id="statEinzahlung">0 &#8364;</div>
+    <div class="stat-label">Eingezahlt</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value zinsen" id="statZinsen">0 &#8364;</div>
+    <div class="stat-label">Zinsen</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value" id="statEnd">0 &#8364;</div>
+    <div class="stat-label">Endbetrag</div>
+  </div>
+</div>
+
+<div class="result-card">
+  <div class="result-label">Endbetrag nach Laufzeit</div>
+  <div class="result-value" id="endbetrag">0 &#8364;</div>
+</div>
+
+<div class="list-title">Jahreswerte</div>
+<div class="jahres-list" id="jahresList">
+  <div class="empty-state">
+    <div class="empty-icon">&#128202;</div>
+    Gib deine Werte ein und tippe auf &bdquo;Berechnen&ldquo;.
+  </div>
+</div>
+
+<script>
+function fmt(n) {
+  return n.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+}
+function num(id) {
+  var v = parseFloat(document.getElementById(id).value.replace(',', '.'));
+  return isNaN(v) ? 0 : v;
+}
+
+function berechnen() {
+  var start = num('start');
+  var monat = num('monat');
+  var zins  = num('zins');
+  var jahre = Math.max(0, Math.round(num('jahre')));
+
+  var monatsZins = zins / 100 / 12;   // monatliche Verzinsung
+  var kapital = start;
+  var einzahlung = start;             // Summe der eigenen Einzahlungen
+
+  var jahresWerte = [];
+
+  for (var j = 1; j <= jahre; j++) {
+    var startKapitalJahr = kapital;
+    var einzahlungVorher = einzahlung;
+    for (var m = 0; m < 12; m++) {
+      kapital += monat;               // Sparrate zu Monatsbeginn
+      einzahlung += monat;
+      kapital += kapital * monatsZins; // Zinsen auf das Kapital
+    }
+    jahresWerte.push({
+      jahr: j,
+      kapital: kapital,
+      einzahlung: einzahlung,
+      zinsenGesamt: kapital - einzahlung,
+      zinsenJahr: kapital - startKapitalJahr - (einzahlung - einzahlungVorher)
+    });
+  }
+
+  var zinsenGesamt = kapital - einzahlung;
+
+  document.getElementById('statEinzahlung').textContent = fmt(einzahlung);
+  document.getElementById('statZinsen').textContent     = fmt(zinsenGesamt);
+  document.getElementById('statEnd').textContent        = fmt(kapital);
+  document.getElementById('endbetrag').textContent      = fmt(kapital);
+
+  var list = document.getElementById('jahresList');
+  if (jahre === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div>Bitte eine Laufzeit von mindestens 1 Jahr angeben.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  jahresWerte.forEach(function(w) {
+    var card = document.createElement('div');
+    card.className = 'jahres-card';
+    card.innerHTML =
+      '<div class="jahres-top">' +
+        '<span class="jahres-name">Jahr ' + w.jahr + '</span>' +
+        '<span class="jahres-sum">' + fmt(w.kapital) + '</span>' +
+      '</div>' +
+      '<div class="jahres-detail">' +
+        '<span>Eingezahlt: <b>' + fmt(w.einzahlung) + '</b></span>' +
+        '<span>Zinsen ges.: <b class="zins">' + fmt(w.zinsenGesamt) + '</b></span>' +
+        '<span>davon dies. Jahr: <b class="zins">' + fmt(w.zinsenJahr) + '</b></span>' +
+      '</div>';
+    list.appendChild(card);
+  });
+}
+
+berechnen();
+</script>
+
+</body>
+</html>
