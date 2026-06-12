@@ -29,6 +29,9 @@
   input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 36px 10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none; }
   input:focus { border-color:var(--accent); }
   input::placeholder { color:var(--muted); }
+  .slider { -webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:3px;background:var(--border);outline:none;margin-top:12px;padding:0;border:none;cursor:pointer; }
+  .slider::-webkit-slider-thumb { -webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);cursor:pointer; }
+  .slider::-moz-range-thumb { width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);cursor:pointer; }
   .btn-add { width:100%;margin-top:14px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer; }
   .btn-add:active { opacity:.8; }
 
@@ -84,34 +87,38 @@
   <div class="field">
     <label>Startsumme (Sparsumme)</label>
     <div class="input-wrap">
-      <input type="number" id="start" inputmode="decimal" placeholder="1000" value="1000">
+      <input type="number" id="start" inputmode="decimal" placeholder="1000" value="1000" oninput="syncSlider('start');berechnen()">
       <span class="suffix">&#8364;</span>
     </div>
+    <input type="range" class="slider" id="start_s" min="0" max="100000" step="500" value="1000" oninput="syncInput('start');berechnen()">
   </div>
 
   <div class="field-row">
     <div class="field">
       <label>Monatliche Sparsumme</label>
       <div class="input-wrap">
-        <input type="number" id="monat" inputmode="decimal" placeholder="100" value="100">
+        <input type="number" id="monat" inputmode="decimal" placeholder="100" value="100" oninput="syncSlider('monat');berechnen()">
         <span class="suffix">&#8364;</span>
       </div>
+      <input type="range" class="slider" id="monat_s" min="0" max="2000" step="10" value="100" oninput="syncInput('monat');berechnen()">
     </div>
     <div class="field">
       <label>Zinssatz p.a.</label>
       <div class="input-wrap">
-        <input type="number" id="zins" inputmode="decimal" step="0.1" placeholder="5" value="5">
+        <input type="number" id="zins" inputmode="decimal" step="0.1" placeholder="5" value="5" oninput="syncSlider('zins');berechnen()">
         <span class="suffix">%</span>
       </div>
+      <input type="range" class="slider" id="zins_s" min="0" max="12" step="0.1" value="5" oninput="syncInput('zins');berechnen()">
     </div>
   </div>
 
   <div class="field">
     <label>Laufzeit</label>
     <div class="input-wrap">
-      <input type="number" id="jahre" inputmode="numeric" placeholder="10" value="10">
+      <input type="number" id="jahre" inputmode="numeric" placeholder="10" value="10" oninput="syncSlider('jahre');berechnen()">
       <span class="suffix">Jahre</span>
     </div>
+    <input type="range" class="slider" id="jahre_s" min="1" max="50" step="1" value="10" oninput="syncInput('jahre');berechnen()">
   </div>
 
   <button class="btn-add" onclick="berechnen()">Berechnen</button>
@@ -160,6 +167,13 @@ function fmt(n) {
 function num(id) {
   var v = parseFloat(document.getElementById(id).value.replace(',', '.'));
   return isNaN(v) ? 0 : v;
+}
+function syncSlider(id) {
+  var s = document.getElementById(id + '_s');
+  if (s) s.value = num(id);
+}
+function syncInput(id) {
+  document.getElementById(id).value = document.getElementById(id + '_s').value;
 }
 
 function berechnen() {
