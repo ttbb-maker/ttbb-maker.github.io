@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Immobilien-Ratenrechner</title>
+<style>
+  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#47b8f5;--accent2:#47f57a;--tilgung:#47f57a;--zinsen:#f5c547;--text:#f0f0ed;--muted:#6b7080;--danger:#f54747;--radius:14px; }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 40px 0; }
+
+  .header { padding:28px 20px 0; }
+  .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
+  .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
+  .header-meta { font-size:11px;color:var(--muted);margin-top:6px; }
+
+  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px; }
+  .form-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+  .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
+  .field-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .field { margin-bottom:10px; }
+  label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:5px; }
+  .input-wrap { position:relative; }
+  .input-wrap .suffix { position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none; }
+  input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 36px 10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none; }
+  input:focus { border-color:var(--accent); }
+  input::placeholder { color:var(--muted); }
+  .field-hint { font-size:10px;color:var(--muted);margin-top:4px;min-height:13px; }
+  .btn-add { width:100%;margin-top:14px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer; }
+  .btn-add:active { opacity:.8; }
+
+  .stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:20px 20px 0; }
+  .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 8px;text-align:center; }
+  .stat-value { font-size:16px;font-weight:700;color:var(--accent);line-height:1.1; }
+  .stat-value.zinsen { color:var(--zinsen); }
+  .stat-value.laufzeit { color:var(--text); }
+  .stat-label { font-size:9px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.1em; }
+
+  .result-card { margin:20px 20px 0;background:linear-gradient(135deg,var(--card),#171a20);border:1px solid var(--accent);border-radius:var(--radius);padding:22px 20px;text-align:center; }
+  .result-label { font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px; }
+  .result-value { font-size:36px;font-weight:800;color:var(--accent);letter-spacing:-1px;line-height:1; }
+  .result-sub { font-size:11px;color:var(--muted);margin-top:8px; }
+
+  .chart-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px 12px; }
+  .legend { display:flex;gap:14px;justify-content:center;margin-bottom:12px;flex-wrap:wrap; }
+  .legend-item { display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted); }
+  .legend-dot { width:11px;height:11px;border-radius:3px; }
+  .legend-dot.tilgung { background:var(--tilgung); }
+  .legend-dot.zinsen { background:var(--zinsen); }
+  .legend-dot.restschuld { background:var(--accent); }
+  .chart-svg { width:100%;height:auto;display:block;overflow:visible; }
+  .chart-svg .bar-tilgung { fill:var(--tilgung); }
+  .chart-svg .bar-zinsen { fill:var(--zinsen); }
+  .chart-svg .rest-line { fill:none;stroke:var(--accent);stroke-width:2; }
+  .chart-svg .rest-dot { fill:var(--accent); }
+  .chart-svg .axis-line { stroke:var(--border);stroke-width:1; }
+  .chart-svg .axis-text { fill:var(--muted);font-size:9px;font-family:inherit; }
+
+  .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;padding:24px 20px 0; }
+  .jahres-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
+  .jahres-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;border-left-width:3px;border-left-color:var(--accent); }
+  .jahres-top { display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px; }
+  .jahres-name { font-size:15px;font-weight:700;color:var(--text); }
+  .jahres-sum { font-size:16px;font-weight:700;color:var(--accent);white-space:nowrap; }
+  .jahres-detail { display:flex;gap:14px;flex-wrap:wrap; }
+  .jahres-detail span { font-size:11px;color:var(--muted); }
+  .jahres-detail b { color:var(--tilgung);font-weight:600; }
+  .jahres-detail b.zins { color:var(--zinsen); }
+
+  .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
+  .empty-icon { font-size:40px;margin-bottom:12px;opacity:.4; }
+  .warn { margin:16px 20px 0;background:rgba(245,71,71,.1);border:1px solid var(--danger);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--danger);display:none; }
+  .warn.show { display:block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Immobilie</div>
+  <h1>Ratenrechner</h1>
+  <div class="header-meta">Berechne deine monatliche Rate &amp; den Tilgungsverlauf (Annuit&auml;tendarlehen)</div>
+</div>
+
+<div class="form-card">
+  <div class="form-title">Eingabe</div>
+
+  <div class="field">
+    <label>Kaufpreis</label>
+    <div class="input-wrap">
+      <input type="number" id="kaufpreis" inputmode="decimal" placeholder="400000" value="400000" oninput="berechnen()">
+      <span class="suffix">&#8364;</span>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label>Nebenkosten</label>
+      <div class="input-wrap">
+        <input type="number" id="nebenkosten" inputmode="decimal" step="0.5" placeholder="10" value="10" oninput="berechnen()">
+        <span class="suffix">%</span>
+      </div>
+      <div class="field-hint" id="hintNk"></div>
+    </div>
+    <div class="field">
+      <label>Eigenkapital</label>
+      <div class="input-wrap">
+        <input type="number" id="eigenkapital" inputmode="decimal" placeholder="80000" value="80000" oninput="berechnen()">
+        <span class="suffix">&#8364;</span>
+      </div>
+      <div class="field-hint">&nbsp;</div>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label>Sollzins p.a.</label>
+      <div class="input-wrap">
+        <input type="number" id="sollzins" inputmode="decimal" step="0.1" placeholder="3.5" value="3.5" oninput="berechnen()">
+        <span class="suffix">%</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Anf. Tilgung p.a.</label>
+      <div class="input-wrap">
+        <input type="number" id="tilgung" inputmode="decimal" step="0.5" placeholder="2" value="2" oninput="berechnen()">
+        <span class="suffix">%</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-add" onclick="berechnen()">Berechnen</button>
+</div>
+
+<div class="warn" id="warnBox"></div>
+
+<div class="result-card">
+  <div class="result-label">Monatliche Rate</div>
+  <div class="result-value" id="rate">0 &#8364;</div>
+  <div class="result-sub" id="rateSub">&nbsp;</div>
+</div>
+
+<div class="stats">
+  <div class="stat-box">
+    <div class="stat-value" id="statDarlehen">0 &#8364;</div>
+    <div class="stat-label">Darlehen</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value zinsen" id="statZinsen">0 &#8364;</div>
+    <div class="stat-label">Zinskosten ges.</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value laufzeit" id="statLaufzeit">0 J</div>
+    <div class="stat-label">Laufzeit</div>
+  </div>
+</div>
+
+<div class="chart-card" id="chartCard">
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot tilgung"></span>Tilgung</div>
+    <div class="legend-item"><span class="legend-dot zinsen"></span>Zinsen</div>
+    <div class="legend-item"><span class="legend-dot restschuld"></span>Restschuld</div>
+  </div>
+  <svg class="chart-svg" id="chartSvg" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Diagramm: Tilgung, Zinsen und Restschuld pro Jahr"></svg>
+</div>
+
+<div class="list-title">Jahreswerte</div>
+<div class="jahres-list" id="jahresList">
+  <div class="empty-state">
+    <div class="empty-icon">&#127968;</div>
+    Gib deine Werte ein und tippe auf &bdquo;Berechnen&ldquo;.
+  </div>
+</div>
+
+<script>
+function fmt(n) {
+  return Math.round(n).toLocaleString('de-DE') + ' €';
+}
+function fmt2(n) {
+  return n.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+}
+function kompakt(n) {
+  if (n >= 1000000) return (n / 1000000).toLocaleString('de-DE', {maximumFractionDigits:1}) + ' Mio €';
+  if (n >= 1000)    return Math.round(n / 1000) + ' Tsd €';
+  return Math.round(n) + ' €';
+}
+function num(id) {
+  var v = parseFloat(document.getElementById(id).value.replace(',', '.'));
+  return isNaN(v) ? 0 : v;
+}
+
+function berechnen() {
+  var kaufpreis    = num('kaufpreis');
+  var nebenProz    = num('nebenkosten');
+  var eigenkapital = num('eigenkapital');
+  var sollzins     = num('sollzins');
+  var tilgungProz  = num('tilgung');
+
+  var nebenkosten = kaufpreis * nebenProz / 100;
+  document.getElementById('hintNk').textContent = nebenkosten > 0 ? '= ' + fmt(nebenkosten) : ' ';
+
+  var darlehen = kaufpreis + nebenkosten - eigenkapital;
+  var warn = document.getElementById('warnBox');
+
+  if (darlehen <= 0) {
+    warn.className = 'warn show';
+    warn.textContent = 'Dein Eigenkapital deckt Kaufpreis und Nebenkosten bereits ab – es ist kein Darlehen nötig.';
+  } else {
+    warn.className = 'warn';
+    warn.textContent = '';
+  }
+
+  // Annuität = Darlehen * (Sollzins% + Tilgung%) pro Jahr
+  var jahresAnnuitaet = darlehen * (sollzins + tilgungProz) / 100;
+  var monatsRate = jahresAnnuitaet / 12;
+  var monatsZins = sollzins / 100 / 12;
+
+  document.getElementById('rate').textContent = darlehen > 0 ? fmt2(monatsRate) : '0,00 €';
+  document.getElementById('statDarlehen').textContent = fmt(Math.max(0, darlehen));
+
+  // Tilgungsplan (monatlich), max. 50 Jahre als Sicherheitsgrenze
+  var restschuld = darlehen;
+  var zinsenGesamt = 0;
+  var monate = 0;
+  var maxMonate = 50 * 12;
+  var jahresWerte = [];
+  var jahrZins = 0, jahrTilg = 0;
+
+  if (darlehen > 0 && monatsRate > 0) {
+    // Wenn die Rate die monatlichen Zinsen nicht übersteigt, gibt es keine Tilgung
+    if (monatsRate <= restschuld * monatsZins + 0.0001 && sollzins > 0) {
+      warn.className = 'warn show';
+      warn.textContent = 'Die Rate ist zu niedrig, um zu tilgen – bitte Tilgung erhöhen.';
+    } else {
+      while (restschuld > 0.01 && monate < maxMonate) {
+        var zinsAnteil = restschuld * monatsZins;
+        var tilgAnteil = monatsRate - zinsAnteil;
+        if (tilgAnteil > restschuld) { tilgAnteil = restschuld; }
+        restschuld -= tilgAnteil;
+        zinsenGesamt += zinsAnteil;
+        jahrZins += zinsAnteil;
+        jahrTilg += tilgAnteil;
+        monate++;
+        if (monate % 12 === 0 || restschuld <= 0.01) {
+          jahresWerte.push({
+            jahr: Math.ceil(monate / 12),
+            restschuld: Math.max(0, restschuld),
+            zinsen: jahrZins,
+            tilgung: jahrTilg
+          });
+          jahrZins = 0; jahrTilg = 0;
+        }
+      }
+    }
+  }
+
+  document.getElementById('statZinsen').textContent = fmt(zinsenGesamt);
+  var jahre = Math.floor(monate / 12);
+  var restMon = monate % 12;
+  document.getElementById('statLaufzeit').textContent = monate > 0 ? (jahre + ' J ' + restMon + ' M') : '–';
+  document.getElementById('rateSub').textContent = monate > 0
+    ? 'Darlehen ' + fmt(darlehen) + ' · abbezahlt in ' + jahre + ' Jahren ' + restMon + ' Monaten'
+    : ' ';
+
+  var list = document.getElementById('jahresList');
+  if (jahresWerte.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#127968;</div>Bitte gültige Werte für ein Darlehen eingeben.</div>';
+    document.getElementById('chartSvg').innerHTML = '';
+    return;
+  }
+
+  renderChart(jahresWerte, darlehen);
+
+  list.innerHTML = '';
+  jahresWerte.forEach(function(w) {
+    var card = document.createElement('div');
+    card.className = 'jahres-card';
+    card.innerHTML =
+      '<div class="jahres-top">' +
+        '<span class="jahres-name">Jahr ' + w.jahr + '</span>' +
+        '<span class="jahres-sum">Rest: ' + fmt(w.restschuld) + '</span>' +
+      '</div>' +
+      '<div class="jahres-detail">' +
+        '<span>Tilgung: <b>' + fmt(w.tilgung) + '</b></span>' +
+        '<span>Zinsen: <b class="zins">' + fmt(w.zinsen) + '</b></span>' +
+      '</div>';
+    list.appendChild(card);
+  });
+}
+
+function renderChart(werte, darlehen) {
+  var svg = document.getElementById('chartSvg');
+  var W = 320, H = 200;
+  var padL = 38, padR = 6, padT = 8, padB = 22;
+  var plotW = W - padL - padR;
+  var plotH = H - padT - padB;
+  var n = werte.length;
+
+  // Achse: Maximum aus Restschuld (Start = Darlehen) und Jahres-Annuität
+  var maxVal = darlehen;
+  werte.forEach(function(w){
+    var ann = w.tilgung + w.zinsen;
+    if (ann > maxVal) maxVal = ann;
+    if (w.restschuld > maxVal) maxVal = w.restschuld;
+  });
+  if (maxVal <= 0) maxVal = 1;
+  var step = Math.pow(10, Math.floor(Math.log10(maxVal)));
+  var top = Math.ceil(maxVal / step) * step;
+
+  function y(val){ return padT + plotH - (val / top) * plotH; }
+
+  var barW = (plotW / n) * 0.6;
+  if (barW > 40) barW = 40;
+
+  var parts = [];
+  [0, 0.5, 1].forEach(function(f){
+    var val = top * f;
+    var yy = y(val);
+    parts.push('<line class="axis-line" x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy + '"/>');
+    parts.push('<text class="axis-text" x="' + (padL - 5) + '" y="' + (yy + 3) + '" text-anchor="end">' + kompakt(val) + '</text>');
+  });
+
+  var labelEvery = Math.ceil(n / 8);
+  var linePts = [];
+
+  werte.forEach(function(w, i){
+    var cx = padL + i * (plotW / n) + (plotW / n) / 2;
+    var x = cx - barW / 2;
+    var yTil = y(w.tilgung);
+    var hTil = (padT + plotH) - yTil;
+    var yZin = y(w.tilgung + w.zinsen);
+    var hZin = yTil - yZin;
+
+    parts.push('<rect class="bar-tilgung" x="' + x.toFixed(1) + '" y="' + yTil.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(0, hTil).toFixed(1) + '" rx="1"><title>Jahr ' + w.jahr + ' – Tilgung: ' + fmt(w.tilgung) + '</title></rect>');
+    parts.push('<rect class="bar-zinsen" x="' + x.toFixed(1) + '" y="' + yZin.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(0, hZin).toFixed(1) + '" rx="1"><title>Jahr ' + w.jahr + ' – Zinsen: ' + fmt(w.zinsen) + '</title></rect>');
+
+    linePts.push([cx, y(w.restschuld)]);
+
+    if (i === 0 || i === n - 1 || (i + 1) % labelEvery === 0) {
+      parts.push('<text class="axis-text" x="' + cx.toFixed(1) + '" y="' + (H - padB + 13) + '" text-anchor="middle">' + w.jahr + '</text>');
+    }
+  });
+
+  // Restschuld-Linie (beginnt beim vollen Darlehen)
+  var startPt = [padL, y(darlehen)];
+  var allPts = [startPt].concat(linePts);
+  var d = allPts.map(function(p, i){ return (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+  parts.push('<path class="rest-line" d="' + d + '"/>');
+  linePts.forEach(function(p){
+    parts.push('<circle class="rest-dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="2"/>');
+  });
+
+  svg.innerHTML = parts.join('');
+}
+
+berechnen();
+</script>
+
+</body>
+</html>
