@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mietrechner</title>
+<style>
+  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#f5874a;--accent2:#47b8f5;--text:#f0f0ed;--muted:#6b7080;--radius:14px; }
+  * { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 90px 0; }
+  .tab-nav { position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100; }
+  .tab-item { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 14px;text-decoration:none;color:var(--muted);font-size:10px;letter-spacing:.05em;text-transform:uppercase;gap:4px;transition:color .15s; }
+  .tab-item.active { color:var(--accent); }
+  .tab-icon { font-size:22px;line-height:1; }
+
+  .header { padding:28px 20px 0; }
+  .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
+  .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
+  .header-meta { font-size:11px;color:var(--muted);margin-top:6px; }
+
+  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px; }
+  .form-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+  .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
+  .field { margin-bottom:10px; }
+  label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:5px; }
+  .input-wrap { position:relative; }
+  .input-wrap .suffix { position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none; }
+  input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 48px 10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none; }
+  input:focus { border-color:var(--accent); }
+  input::placeholder { color:var(--muted); }
+  .slider { -webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:3px;background:var(--border);outline:none;margin-top:12px;padding:0;border:none;cursor:pointer; }
+  .slider::-webkit-slider-thumb { -webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);cursor:pointer; }
+  .slider::-moz-range-thumb { width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);cursor:pointer; }
+
+  .result-card { margin:20px 20px 0;background:linear-gradient(135deg,var(--card),#171a20);border:1px solid var(--accent);border-radius:var(--radius);padding:22px 20px;text-align:center; }
+  .result-label { font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px; }
+  .result-value { font-size:36px;font-weight:800;color:var(--accent);letter-spacing:-1px;line-height:1; }
+  .result-sub { font-size:11px;color:var(--muted);margin-top:8px; }
+
+  .stats { display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:20px 20px 0; }
+  .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center; }
+  .stat-value { font-size:20px;font-weight:700;color:var(--accent);line-height:1; }
+  .stat-label { font-size:9px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.1em; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Wohnen</div>
+  <h1>Mietrechner</h1>
+  <div class="header-meta">Berechne die Gesamtmiete aus Wohnfl&auml;che und Quadratmeterpreis</div>
+</div>
+
+<div class="form-card">
+  <div class="form-title">Eingabe</div>
+
+  <div class="field">
+    <label>Wohnfl&auml;che</label>
+    <div class="input-wrap">
+      <input type="number" id="qm" inputmode="decimal" placeholder="70" value="70" oninput="syncSlider('qm');berechnen()">
+      <span class="suffix">m&sup2;</span>
+    </div>
+    <input type="range" class="slider" id="qm_s" min="10" max="250" step="1" value="70" oninput="syncInput('qm');berechnen()">
+  </div>
+
+  <div class="field">
+    <label>Miete pro Quadratmeter</label>
+    <div class="input-wrap">
+      <input type="number" id="preis" inputmode="decimal" step="0.5" placeholder="12" value="12" oninput="syncSlider('preis');berechnen()">
+      <span class="suffix">&#8364;/m&sup2;</span>
+    </div>
+    <input type="range" class="slider" id="preis_s" min="3" max="40" step="0.5" value="12" oninput="syncInput('preis');berechnen()">
+  </div>
+</div>
+
+<div class="result-card">
+  <div class="result-label">Gesamtmiete pro Monat</div>
+  <div class="result-value" id="gesamt">0 &#8364;</div>
+  <div class="result-sub" id="gesamtSub">&nbsp;</div>
+</div>
+
+<div class="stats">
+  <div class="stat-box">
+    <div class="stat-value" id="statJahr">0 &#8364;</div>
+    <div class="stat-label">Pro Jahr</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value" id="statQm">0 &#8364;</div>
+    <div class="stat-label">Pro m&sup2;</div>
+  </div>
+</div>
+
+<script>
+function fmt2(n) {
+  return n.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+}
+function num(id) {
+  var v = parseFloat(document.getElementById(id).value.replace(',', '.'));
+  return isNaN(v) ? 0 : v;
+}
+function syncSlider(id) {
+  var s = document.getElementById(id + '_s');
+  if (s) s.value = num(id);
+}
+function syncInput(id) {
+  document.getElementById(id).value = document.getElementById(id + '_s').value;
+}
+
+function berechnen() {
+  var qm    = num('qm');
+  var preis = num('preis');
+
+  var gesamt = qm * preis;
+
+  document.getElementById('gesamt').textContent  = fmt2(gesamt);
+  document.getElementById('gesamtSub').textContent = qm > 0 && preis > 0
+    ? qm.toLocaleString('de-DE') + ' m² × ' + fmt2(preis) + '/m²'
+    : ' ';
+  document.getElementById('statJahr').textContent = fmt2(gesamt * 12);
+  document.getElementById('statQm').textContent   = fmt2(preis);
+}
+
+berechnen();
+</script>
+
+<nav class="tab-nav">
+  <a class="tab-item" href="finanzen.html">
+    <span class="tab-icon">&#128176;</span>Buchungen
+  </a>
+  <a class="tab-item" href="finanzen-vermoegen.html">
+    <span class="tab-icon">&#128200;</span>Verm&ouml;gen
+  </a>
+  <a class="tab-item" href="zinseszins.html">
+    <span class="tab-icon">&#128185;</span>Zinseszins
+  </a>
+  <a class="tab-item" href="immobilien-rechner.html">
+    <span class="tab-icon">&#127968;</span>Immobilie
+  </a>
+  <a class="tab-item active" href="mietrechner.html">
+    <span class="tab-icon">&#128273;</span>Miete
+  </a>
+</nav>
+
+</body>
+</html>
