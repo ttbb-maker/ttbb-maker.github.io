@@ -251,6 +251,10 @@
   Tipps sind nur bis zum Anpfiff &auml;nderbar. Teile den Link mit der Familie &ndash; alle sehen die gleichen Tipps.
 </div>
 
+<div style="text-align:center;padding:20px 20px 0;">
+  <button class="btn-mini" style="border-color:var(--danger);color:var(--danger);" onclick="resetGame()">&#9888;&#65039; Tippspiel zur&uuml;cksetzen</button>
+</div>
+
 <datalist id="nameList"></datalist>
 
 <div class="toast" id="toast"></div>
@@ -749,6 +753,14 @@ async function addGame(){
   toggleAddForm();
   render(); await save();
   showToast('Spiel hinzugefügt');
+}
+
+async function resetGame(){
+  if (!confirm('Wirklich ALLE Tipps und Ergebnisse löschen und das Tippspiel komplett zurücksetzen?\n\nDie 3 Gruppenspiele bleiben erhalten, alle Tipps/Ergebnisse werden entfernt. Das gilt für die ganze Familie!')) return;
+  data = { spiele: seedSpiele(), tipps: [] };
+  render();
+  var ok = await save();
+  showToast(ok ? 'Tippspiel zurückgesetzt 🔄' : 'Zurückgesetzt (nur lokal – offline)');
 }
 
 function esc(s){ return String(s).replace(/[&<>"']/g, function(c){
