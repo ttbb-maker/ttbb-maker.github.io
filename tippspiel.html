@@ -15,11 +15,19 @@
     --radius:16px;
   }
   * { box-sizing:border-box;margin:0;padding:0; }
-  body { background:
-      radial-gradient(1100px 420px at 50% -140px, rgba(221,0,0,.16), transparent 70%),
-      radial-gradient(800px 320px at 50% -40px, rgba(255,206,0,.10), transparent 70%),
-      var(--bg);
+  html { background:var(--bg); }
+  body { background:transparent;
     color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 90px 0;position:relative; }
+
+  /* Hintergrund-Fotos (Familie) */
+  .bg-photos { position:fixed;inset:0;z-index:-2;display:flex;flex-direction:column; }
+  .bg-photos i { flex:1;background-size:cover;background-position:center top;opacity:.30; }
+  .bg-photos .bp1 { background-image:url('tippspiel-foto1.jpg'); }
+  .bg-photos .bp2 { background-image:url('tippspiel-foto2.jpg'); }
+  .bg-overlay { position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+      radial-gradient(1100px 460px at 50% -120px, rgba(221,0,0,.30), transparent 65%),
+      radial-gradient(820px 340px at 50% -20px, rgba(255,206,0,.18), transparent 65%),
+      linear-gradient(180deg, rgba(10,10,13,.80) 0%, rgba(10,10,13,.86) 50%, rgba(10,10,13,.92) 100%); }
 
   /* Deutschland-Flaggenstreifen */
   .flag-bar { display:flex;height:6px; }
@@ -36,7 +44,7 @@
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent; }
   .header-meta { font-size:11px;color:var(--muted);margin-top:8px; }
 
-  .name-card { margin:18px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px; }
+  .name-card { margin:18px 20px 0;background:rgba(28,28,36,.88);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px; }
   .name-card label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:6px; }
   .name-row { display:flex;gap:8px;align-items:center; }
   .name-row input { flex:1; }
@@ -57,7 +65,7 @@
   .section-title .btn-refresh { margin-left:auto;background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1; }
 
   /* Tabelle / Rangliste */
-  .board { margin:10px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.35); }
+  .board { margin:10px 20px 0;background:rgba(28,28,36,.88);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.4); }
   .board-row { display:grid;grid-template-columns:36px 1fr auto auto;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px; }
   .board-row:last-child { border-bottom:none; }
   .board-row.head { font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);background:var(--surface); }
@@ -74,7 +82,7 @@
 
   /* Spiel-Karten */
   .games { padding:8px 20px 0;display:flex;flex-direction:column;gap:14px; }
-  .game-card { background:linear-gradient(180deg,#20202a,#1a1a22);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.35); }
+  .game-card { background:linear-gradient(180deg,rgba(32,32,42,.90),rgba(26,26,34,.93));backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.4); }
   .game-card::before { content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#111 0%,#111 33%,var(--red) 33%,var(--red) 66%,var(--gold) 66%); }
   .game-top { display:flex;justify-content:space-between;align-items:center;margin-bottom:14px; }
   .game-phase { font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);background:rgba(255,206,0,.08);border:1px solid rgba(255,206,0,.3);border-radius:20px;padding:3px 9px;font-weight:700; }
@@ -110,6 +118,38 @@
   .btn-result-save { background:var(--red);color:#fff; }
   .btn-result-clear { background:transparent;border:1px solid var(--border)!important;color:var(--muted); }
 
+  /* Quoten */
+  .odds { margin-top:12px;padding-top:12px;border-top:1px solid var(--border); }
+  .odds-head { font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center; }
+  .odds-head .fav-txt { color:var(--gold);font-weight:700; }
+  .odds-cells { display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:9px; }
+  .odd-cell { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center; }
+  .odd-cell.fav { border-color:var(--gold);background:rgba(255,206,0,.08); }
+  .odd-cell .ol { font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+  .odd-cell .ov { font-size:17px;font-weight:800;color:var(--text);margin-top:3px; }
+  .odd-cell .op { font-size:10px;color:var(--muted);margin-top:1px; }
+  .odd-cell.fav .ov { color:var(--gold); }
+  .prob-bar { display:flex;height:9px;border-radius:6px;overflow:hidden;background:var(--surface); }
+  .prob-bar i { display:block;height:100%; }
+  .prob-bar .ph { background:linear-gradient(90deg,#ffd633,#f5bd00); }
+  .prob-bar .pd { background:#5a5a68; }
+  .prob-bar .pa { background:var(--red); }
+  .odds-edit-toggle { font-size:10px;color:var(--muted);cursor:pointer;margin-top:8px;display:inline-block;border-bottom:1px dotted var(--border); }
+  .odds-inputs { display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px; }
+  .odds-inputs label { display:block;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px;text-align:center; }
+  .odds-inputs input { text-align:center;font-size:15px;font-weight:700;padding:7px 4px; }
+
+  /* Für andere eintragen */
+  .proxy-toggle { font-size:11px;color:var(--gold);cursor:pointer;margin-top:12px;display:inline-block;font-weight:600; }
+  .proxy-box { display:none;margin-top:10px;padding:12px;background:var(--surface);border:1px dashed rgba(255,206,0,.4);border-radius:10px; }
+  .proxy-box.open { display:block; }
+  .proxy-box .plabel { font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:5px; }
+  .proxy-score { display:grid;grid-template-columns:1fr 56px auto 56px 1fr;align-items:center;gap:8px;margin-top:10px; }
+  .proxy-score input { text-align:center;font-size:16px;font-weight:700;padding:7px 4px; }
+  .proxy-score .colon { text-align:center;font-weight:800;color:var(--muted); }
+  .btn-proxy-save { width:100%;margin-top:10px;background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer; }
+  .btn-proxy-save:active { background:rgba(255,206,0,.1); }
+
   /* Tipp-Liste der Familie */
   .tips-list { margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px; }
   .tips-head { font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:2px; }
@@ -143,6 +183,9 @@
 </style>
 </head>
 <body>
+
+<div class="bg-photos" aria-hidden="true"><i class="bp1"></i><i class="bp2"></i></div>
+<div class="bg-overlay" aria-hidden="true"></div>
 
 <div class="flag-bar"><i class="b"></i><i class="r"></i><i class="g"></i></div>
 
@@ -208,6 +251,8 @@
   Tipps sind nur bis zum Anpfiff &auml;nderbar. Teile den Link mit der Familie &ndash; alle sehen die gleichen Tipps.
 </div>
 
+<datalist id="nameList"></datalist>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -229,9 +274,9 @@ function flag(name){ return FLAGS[name] || '⚽'; }
 // Standard-Spielplan (wird einmalig angelegt, falls Server leer)
 function seedSpiele(){
   return [
-    {id:1, phase:'Gruppe E', heim:'Deutschland', gast:'Curaçao',        ort:'Houston',    anpfiff:'2026-06-14T19:00', hSc:null, gSc:null},
-    {id:2, phase:'Gruppe E', heim:'Deutschland', gast:'Elfenbeinküste', ort:'Toronto',    anpfiff:'2026-06-20T22:00', hSc:null, gSc:null},
-    {id:3, phase:'Gruppe E', heim:'Ecuador',     gast:'Deutschland',    ort:'New Jersey', anpfiff:'2026-06-25T22:00', hSc:null, gSc:null}
+    {id:1, phase:'Gruppe E', heim:'Deutschland', gast:'Curaçao',        ort:'Houston',    anpfiff:'2026-06-14T19:00', hSc:null, gSc:null, odds:{h:1.06, d:13.0, a:29.0}},
+    {id:2, phase:'Gruppe E', heim:'Deutschland', gast:'Elfenbeinküste', ort:'Toronto',    anpfiff:'2026-06-20T22:00', hSc:null, gSc:null, odds:{h:1.55, d:4.20, a:5.50}},
+    {id:3, phase:'Gruppe E', heim:'Ecuador',     gast:'Deutschland',    ort:'New Jersey', anpfiff:'2026-06-25T22:00', hSc:null, gSc:null, odds:{h:3.60, d:3.30, a:2.00}}
   ];
 }
 
@@ -365,6 +410,13 @@ function render(){
   renderName();
   renderBoard();
   renderGames();
+  renderNameList();
+}
+
+function renderNameList(){
+  var dl = document.getElementById('nameList');
+  if (!dl) return;
+  dl.innerHTML = allNames().sort().map(function(n){ return '<option value="'+esc(n)+'">'; }).join('');
 }
 
 function renderBoard(){
@@ -490,13 +542,90 @@ function gameCard(s){
       '<div class="vs-mid">'+mid+'</div>'+
       '<div class="team"><span class="flag">'+flag(s.gast)+'</span><span class="tname">'+esc(s.gast)+'</span></div>'+
     '</div>'+
+    oddsBlock(s)+
     '<div class="my-tip">'+tipBlock+'</div>'+
+    proxyBlock(s, locked)+
     tipsList+
     resultBlock+
   '</div>';
 }
 
+// --- Quoten ---
+function impliedProbs(o){
+  if (!o || !o.h || !o.d || !o.a) return null;
+  var ih=1/o.h, id=1/o.d, ia=1/o.a, sum=ih+id+ia;
+  return {h:ih/sum, d:id/sum, a:ia/sum};
+}
+
+function oddsBlock(s){
+  var o = s.odds;
+  var edit =
+    '<div class="odds-edit-toggle" onclick="toggleOdds('+s.id+')">&#9998; Quote bearbeiten</div>'+
+    '<div class="result-box" id="oddsBox_'+s.id+'">'+
+      '<div class="odds-inputs">'+
+        '<div><label>1 ('+esc(short(s.heim))+')</label><input type="number" step="0.01" min="1" id="oddH_'+s.id+'" value="'+(o?o.h:'')+'" placeholder="1.50" inputmode="decimal"></div>'+
+        '<div><label>X (Remis)</label><input type="number" step="0.01" min="1" id="oddD_'+s.id+'" value="'+(o?o.d:'')+'" placeholder="3.50" inputmode="decimal"></div>'+
+        '<div><label>2 ('+esc(short(s.gast))+')</label><input type="number" step="0.01" min="1" id="oddA_'+s.id+'" value="'+(o?o.a:'')+'" placeholder="5.00" inputmode="decimal"></div>'+
+      '</div>'+
+      '<div class="result-actions">'+
+        '<button class="btn-result-save" style="background:var(--gold);color:#1a1300;" onclick="saveOdds('+s.id+')">Quote speichern</button>'+
+        (o?'<button class="btn-result-clear" onclick="clearOdds('+s.id+')">Entfernen</button>':'')+
+      '</div>'+
+    '</div>';
+
+  if (!o){
+    return '<div class="odds"><div class="odds-head"><span>Quote</span></div>'+
+      '<div class="tips-empty" style="font-size:11px;color:var(--muted);">Noch keine Quote &ndash; gib eine Einsch&auml;tzung ab.</div>'+
+      edit+'</div>';
+  }
+  var p = impliedProbs(o);
+  var fav = (p.h>=p.d && p.h>=p.a) ? 'h' : ((p.a>=p.h && p.a>=p.d) ? 'a' : 'd');
+  var favName = fav==='h' ? s.heim : (fav==='a' ? s.gast : 'Unentschieden');
+  var favPct = Math.round((fav==='h'?p.h:(fav==='a'?p.a:p.d))*100);
+  var pct = function(x){ return Math.round(x*100); };
+  return '<div class="odds">'+
+    '<div class="odds-head"><span>Quote (Sch&auml;tzung)</span><span class="fav-txt">&#11088; '+esc(favName)+' '+favPct+'%</span></div>'+
+    '<div class="odds-cells">'+
+      '<div class="odd-cell'+(fav==='h'?' fav':'')+'"><div class="ol">1 &middot; '+esc(short(s.heim))+'</div><div class="ov">'+o.h.toFixed(2)+'</div><div class="op">'+pct(p.h)+'%</div></div>'+
+      '<div class="odd-cell'+(fav==='d'?' fav':'')+'"><div class="ol">X &middot; Remis</div><div class="ov">'+o.d.toFixed(2)+'</div><div class="op">'+pct(p.d)+'%</div></div>'+
+      '<div class="odd-cell'+(fav==='a'?' fav':'')+'"><div class="ol">2 &middot; '+esc(short(s.gast))+'</div><div class="ov">'+o.a.toFixed(2)+'</div><div class="op">'+pct(p.a)+'%</div></div>'+
+    '</div>'+
+    '<div class="prob-bar"><i class="ph" style="width:'+pct(p.h)+'%"></i><i class="pd" style="width:'+pct(p.d)+'%"></i><i class="pa" style="width:'+pct(p.a)+'%"></i></div>'+
+    edit+'</div>';
+}
+
+function short(name){ return String(name).length>11 ? String(name).slice(0,10)+'.' : name; }
+
+// Eingabe für andere Personen, die die App nicht selbst nutzen
+function proxyBlock(s, locked){
+  if (locked) return '';
+  return '<span class="proxy-toggle" onclick="toggleProxy('+s.id+')">&#128101; Tipp f&uuml;r jemand anderen eintragen</span>'+
+    '<div class="proxy-box" id="proxyBox_'+s.id+'">'+
+      '<div class="plabel">Name der Person (z.B. Oma, Opa, Papa)</div>'+
+      '<input type="text" list="nameList" id="proxyName_'+s.id+'" placeholder="Name eingeben oder w&auml;hlen ...">'+
+      '<div class="proxy-score">'+
+        '<div></div>'+
+        '<input type="number" min="0" max="99" id="proxyH_'+s.id+'" placeholder="0" inputmode="numeric">'+
+        '<div class="colon">:</div>'+
+        '<input type="number" min="0" max="99" id="proxyG_'+s.id+'" placeholder="0" inputmode="numeric">'+
+        '<div></div>'+
+      '</div>'+
+      '<button class="btn-proxy-save" onclick="saveProxy('+s.id+')">Tipp f&uuml;r diese Person speichern</button>'+
+    '</div>';
+}
+
+function toggleProxy(spielId){
+  var b = document.getElementById('proxyBox_'+spielId);
+  if (b) b.classList.toggle('open');
+}
+
 // --- Aktionen ---
+function setTip(spielId, name, h, g){
+  var existing = data.tipps.find(function(t){return t.spielId===spielId && t.name===name;});
+  if (existing){ existing.h=h; existing.g=g; existing.ts=Date.now(); }
+  else data.tipps.push({spielId:spielId, name:name, h:h, g:g, ts:Date.now()});
+}
+
 async function saveTip(spielId){
   var s = data.spiele.find(function(x){return x.id===spielId;});
   if (!s) return;
@@ -505,12 +634,52 @@ async function saveTip(spielId){
   var h = parseInt(document.getElementById('tipH_'+spielId).value, 10);
   var g = parseInt(document.getElementById('tipG_'+spielId).value, 10);
   if (isNaN(h) || isNaN(g) || h<0 || g<0){ showToast('Bitte gültigen Tipp eingeben'); return; }
-  var existing = data.tipps.find(function(t){return t.spielId===spielId && t.name===myName;});
-  if (existing){ existing.h=h; existing.g=g; existing.ts=Date.now(); }
-  else data.tipps.push({spielId:spielId, name:myName, h:h, g:g, ts:Date.now()});
+  setTip(spielId, myName, h, g);
   render();
   var ok = await save();
   showToast(ok ? 'Tipp gespeichert! ✅' : 'Nur lokal gespeichert (offline)');
+}
+
+async function saveProxy(spielId){
+  var s = data.spiele.find(function(x){return x.id===spielId;});
+  if (!s) return;
+  if (isLocked(s)){ showToast('Anpfiff vorbei – Tipp gesperrt'); render(); return; }
+  var name = document.getElementById('proxyName_'+spielId).value.trim();
+  var h = parseInt(document.getElementById('proxyH_'+spielId).value, 10);
+  var g = parseInt(document.getElementById('proxyG_'+spielId).value, 10);
+  if (!name){ showToast('Bitte Namen der Person eingeben'); return; }
+  if (name===myName){ showToast('Das ist dein eigener Name – nutze dein eigenes Tippfeld'); return; }
+  if (isNaN(h) || isNaN(g) || h<0 || g<0){ showToast('Bitte gültigen Tipp eingeben'); return; }
+  setTip(spielId, name, h, g);
+  render();
+  var ok = await save();
+  showToast(ok ? 'Tipp für '+name+' gespeichert! ✅' : 'Nur lokal gespeichert (offline)');
+}
+
+function toggleOdds(spielId){
+  var b = document.getElementById('oddsBox_'+spielId);
+  if (b) b.classList.toggle('open');
+}
+
+async function saveOdds(spielId){
+  var s = data.spiele.find(function(x){return x.id===spielId;});
+  if (!s) return;
+  var h = parseFloat(document.getElementById('oddH_'+spielId).value);
+  var d = parseFloat(document.getElementById('oddD_'+spielId).value);
+  var a = parseFloat(document.getElementById('oddA_'+spielId).value);
+  if (isNaN(h)||isNaN(d)||isNaN(a)||h<=1||d<=1||a<=1){ showToast('Bitte Quoten > 1 eingeben'); return; }
+  s.odds = {h:h, d:d, a:a};
+  render();
+  var ok = await save();
+  showToast(ok ? 'Quote gespeichert! 📊' : 'Nur lokal gespeichert (offline)');
+}
+
+async function clearOdds(spielId){
+  var s = data.spiele.find(function(x){return x.id===spielId;});
+  if (!s) return;
+  s.odds = null;
+  render(); await save();
+  showToast('Quote entfernt');
 }
 
 function toggleResult(spielId){
