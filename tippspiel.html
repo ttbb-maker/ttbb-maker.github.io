@@ -500,29 +500,25 @@ function gameCard(s){
       '<button class="btn-save" onclick="saveTip('+s.id+')">'+(mt?'Tipp ändern':'Tipp abgeben')+'</button>';
   }
 
-  // Tipp-Liste der Familie (erst sichtbar wenn gesperrt/beendet, vorher nur Anzahl)
+  // Tipp-Liste der Familie (immer sichtbar)
   var tips = tipsFor(s.id);
   var tipsList = '';
-  if (locked){
-    if (tips.length){
-      var sorted = tips.slice().sort(function(a,b){
-        var pa=points(a,s), pb=points(b,s);
-        if (res) return (pb-pa) || a.name.localeCompare(b.name);
-        return a.name.localeCompare(b.name);
-      });
-      tipsList = '<div class="tips-list"><div class="tips-head">Tipps der Familie</div>' +
-        sorted.map(function(t){
-          var p = points(t,s);
-          var badge = (p!==null) ? '<span class="tpts p'+p+'">'+p+' P</span>' : '';
-          var me = t.name===myName ? ' me' : '';
-          return '<div class="tip-item"><span class="tname2'+me+'">'+esc(t.name)+'</span>'+
-                 '<span class="tscore">'+t.h+':'+t.g+'</span>'+badge+'</div>';
-        }).join('') + '</div>';
-    } else {
-      tipsList = '<div class="tips-list"><div class="tips-empty">Niemand hat dieses Spiel getippt.</div></div>';
-    }
+  if (tips.length){
+    var sorted = tips.slice().sort(function(a,b){
+      var pa=points(a,s), pb=points(b,s);
+      if (res) return (pb-pa) || a.name.localeCompare(b.name);
+      return a.name.localeCompare(b.name);
+    });
+    tipsList = '<div class="tips-list"><div class="tips-head">Tipps der Familie ('+tips.length+')</div>' +
+      sorted.map(function(t){
+        var p = points(t,s);
+        var badge = (p!==null) ? '<span class="tpts p'+p+'">'+p+' P</span>' : '';
+        var me = t.name===myName ? ' me' : '';
+        return '<div class="tip-item"><span class="tname2'+me+'">'+esc(t.name)+(me?' (du)':'')+'</span>'+
+               '<span class="tscore">'+t.h+':'+t.g+'</span>'+badge+'</div>';
+      }).join('') + '</div>';
   } else {
-    tipsList = '<div class="tips-list"><div class="tips-empty">'+tips.length+' Tipp(s) abgegeben &middot; sichtbar ab Anpfiff</div></div>';
+    tipsList = '<div class="tips-list"><div class="tips-empty">Noch keine Tipps abgegeben.</div></div>';
   }
 
   // Ergebnis-Eingabe (für alle, sinnvoll nach Anpfiff)
