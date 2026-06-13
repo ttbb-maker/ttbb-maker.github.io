@@ -302,7 +302,19 @@ async function loadData(){
     setSyncDot(false);
     if (!local) showToast('Offline – Spielplan wird lokal angezeigt');
   }
+  if (mergeSeedOdds()) { save(); }
   render();
+}
+
+// Ergänzt geschätzte Quoten bei Spielen, die noch ohne Quote gespeichert wurden
+function mergeSeedOdds(){
+  var seeds = seedSpiele(), changed = false;
+  data.spiele.forEach(function(s){
+    if (s.odds) return;
+    var sd = seeds.find(function(x){ return x.id===s.id; });
+    if (sd && sd.odds){ s.odds = sd.odds; changed = true; }
+  });
+  return changed;
 }
 
 function normalize(d){
