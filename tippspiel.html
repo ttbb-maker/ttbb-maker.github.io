@@ -80,6 +80,21 @@
   .board-pts { font-weight:800;color:var(--gold);text-align:right;min-width:34px;font-size:16px; }
   .board-empty { padding:18px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5; }
 
+  /* Gruppentabelle */
+  .gtable { margin:10px 20px 0;background:rgba(24,24,32,.80);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.4); }
+  .gt-row { display:grid;grid-template-columns:22px 1fr 26px 46px 34px 28px;gap:6px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px; }
+  .gt-row:last-child { border-bottom:none; }
+  .gt-row.head { font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--surface); }
+  .gt-row.de { background:linear-gradient(90deg,rgba(255,206,0,.16),transparent 75%); }
+  .gt-rank { font-weight:800;color:var(--muted);text-align:center; }
+  .gt-row.de .gt-rank { color:var(--gold); }
+  .gt-team { display:flex;align-items:center;gap:7px;overflow:hidden; }
+  .gt-team .flag { font-size:19px;line-height:1;flex-shrink:0; }
+  .gt-team .nm { font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+  .gt-row.de .gt-team .nm { color:var(--gold); }
+  .gt-c { text-align:center;color:var(--text);font-variant-numeric:tabular-nums; }
+  .gt-pts { text-align:center;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums; }
+
   /* Spiel-Karten */
   .games { padding:8px 20px 0;display:flex;flex-direction:column;gap:14px; }
   .game-card { background:linear-gradient(180deg,rgba(24,24,32,.80),rgba(20,20,28,.85));backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.4); }
@@ -244,6 +259,13 @@
     </div>
     <button class="btn-add" onclick="addGame()">Spiel hinzuf&uuml;gen</button>
   </div>
+</div>
+
+<!-- Gruppentabelle -->
+<div class="section-title">&#128202; Gruppe E &ndash; Tabelle</div>
+<div class="gtable" id="gtable"></div>
+<div style="padding:8px 20px 0;font-size:10px;color:var(--muted);line-height:1.5;text-align:center;">
+  Berechnet aus den eingetragenen Ergebnissen. F&uuml;r die vollst&auml;ndige Tabelle auch die &uuml;brigen Gruppenspiele eintragen (&bdquo;K.o.-Spiel hinzuf&uuml;gen&ldquo;, Phase &bdquo;Gruppe E&ldquo;).
 </div>
 
 <div class="info-foot">
@@ -426,7 +448,52 @@ function render(){
   renderName();
   renderBoard();
   renderGames();
+  renderGroupTable();
   renderNameList();
+}
+
+// --- Gruppentabelle (Gruppe E) ---
+var GROUP_TEAMS = ['Deutschland','Curaçao','Elfenbeinküste','Ecuador'];
+
+function groupTable(){
+  var t = {};
+  GROUP_TEAMS.forEach(function(name){ t[name] = {team:name, sp:0, s:0, u:0, n:0, tf:0, ta:0, pkt:0}; });
+  data.spiele.forEach(function(s){
+    if (!hasResult(s)) return;
+    if (String(s.phase||'').toLowerCase().indexOf('gruppe') !== 0) return;
+    var H = t[s.heim], G = t[s.gast];
+    if (!H || !G) return;
+    H.sp++; G.sp++;
+    H.tf += s.hSc; H.ta += s.gSc;
+    G.tf += s.gSc; G.ta += s.hSc;
+    if (s.hSc > s.gSc){ H.s++; G.n++; H.pkt += 3; }
+    else if (s.hSc < s.gSc){ G.s++; H.n++; G.pkt += 3; }
+    else { H.u++; G.u++; H.pkt++; G.pkt++; }
+  });
+  return GROUP_TEAMS.map(function(k){ return t[k]; }).sort(function(a,b){
+    return b.pkt-a.pkt || (b.tf-b.ta)-(a.tf-a.ta) || b.tf-a.tf || a.team.localeCompare(b.team);
+  });
+}
+
+function renderGroupTable(){
+  var box = document.getElementById('gtable');
+  if (!box) return;
+  var arr = groupTable();
+  var html = '<div class="gt-row head"><div>#</div><div>Team</div><div class="gt-c">Sp</div><div class="gt-c">Tore</div><div class="gt-c">Diff</div><div class="gt-c">Pkt</div></div>';
+  arr.forEach(function(r,i){
+    var diff = r.tf - r.ta;
+    var ds = (diff>0?'+':'') + diff;
+    var de = r.team==='Deutschland' ? ' de' : '';
+    html += '<div class="gt-row'+de+'">'+
+      '<div class="gt-rank">'+(i+1)+'</div>'+
+      '<div class="gt-team"><span class="flag">'+flag(r.team)+'</span><span class="nm">'+esc(r.team)+'</span></div>'+
+      '<div class="gt-c">'+r.sp+'</div>'+
+      '<div class="gt-c">'+r.tf+':'+r.ta+'</div>'+
+      '<div class="gt-c">'+ds+'</div>'+
+      '<div class="gt-pts">'+r.pkt+'</div>'+
+    '</div>';
+  });
+  box.innerHTML = html;
 }
 
 function renderNameList(){
