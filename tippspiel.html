@@ -350,7 +350,8 @@ function importKnownResults(){
   // Feststehende Endergebnisse der Deutschlandspiele
   data.spiele.forEach(function(s){
     if (s.heim==='Deutschland' && s.gast==='Curaçao' && !hasResult(s)){ s.hSc=7; s.gSc=1; changed=true; }
-    if (s.heim==='Deutschland' && s.gast==='Elfenbeinküste' && !hasResult(s)){ s.hSc=1; s.gSc=1; changed=true; }
+    // 20.06.2026 Endstand 2:1 (korrigiert den zwischenzeitlichen 1:1-Stand)
+    if (s.heim==='Deutschland' && s.gast==='Elfenbeinküste' && !(s.hSc===2 && s.gSc===1)){ s.hSc=2; s.gSc=1; changed=true; }
   });
   // 15.06.2026: Elfenbeinküste 1:0 Ecuador – nur für die Gruppentabelle (keine Tippkarte)
   var exists = data.spiele.some(function(s){
