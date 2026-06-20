@@ -347,9 +347,10 @@ function mergeSeedOdds(){
 // Trägt bereits feststehende Endergebnisse ein (überschreibt nichts manuell Gesetztes)
 function importKnownResults(){
   var changed = false;
-  // 14.06.2026: Deutschland 7:1 Curaçao
+  // Feststehende Endergebnisse der Deutschlandspiele
   data.spiele.forEach(function(s){
     if (s.heim==='Deutschland' && s.gast==='Curaçao' && !hasResult(s)){ s.hSc=7; s.gSc=1; changed=true; }
+    if (s.heim==='Deutschland' && s.gast==='Elfenbeinküste' && !hasResult(s)){ s.hSc=1; s.gSc=1; changed=true; }
   });
   // 15.06.2026: Elfenbeinküste 1:0 Ecuador – nur für die Gruppentabelle (keine Tippkarte)
   var exists = data.spiele.some(function(s){
