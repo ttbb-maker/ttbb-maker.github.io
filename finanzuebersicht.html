@@ -1086,17 +1086,15 @@ function importData(input){
   input.value='';
 }
 async function importTradeRepublic(){
-  if(!confirm('Trade Republic Depot (21.06.2026) laden?\n23 Positionen werden importiert.\n\nAchtung: Vorhandene Aktien-Daten werden überschrieben.'))return;
+  if(!confirm('Trade Republic Depot (21.06.2026) laden?\n23 Positionen werden importiert.\n\nNur Aktien werden ersetzt — Immobilien, Edelmetalle usw. bleiben erhalten.'))return;
   const btn=document.getElementById('tr-import-btn');
   btn.textContent='⏳ Lädt...';btn.disabled=true;
   try{
     const r=await fetch('https://ttbb-maker.github.io/tr-import.json');
     if(!r.ok)throw new Error('HTTP '+r.status);
     const imported=await r.json();
-    data=imported;
-    data.immobilien=(data.immobilien||[]).map(x=>({hypotheken:[],mieteinnahmen:[],...x}));
-    data.snapshots=data.snapshots||[];
-    data.edelmetalle=migrateEdel(data.edelmetalle||[]);
+    // Nur Aktien ersetzen – alle anderen Kategorien bleiben erhalten
+    data.aktien=imported.aktien||[];
     await save();
     renderDashboard();updateSidebar();
     btn.textContent='✓ Importiert';
