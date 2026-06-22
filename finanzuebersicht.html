@@ -293,6 +293,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <label class="btn btn-ghost btn-sm" style="cursor:pointer">📥 Importieren<input type="file" accept=".json" onchange="importData(this)" style="display:none"></label>
     <button class="btn btn-primary btn-sm" id="tr-import-btn" onclick="importTradeRepublic()" title="Trade Republic Vermögensübersicht 21.06.2026 laden">📊 TR Import</button>
     <button class="btn btn-sm" style="background:var(--red);color:#fff" id="recovery-btn" onclick="importRecovery()" title="Alle Daten wiederherstellen (Immobilien + Aktien + Edelmetalle)">🔄 Wiederherstellen</button>
+    <button class="btn btn-sm" style="display:none;background:var(--orange,#f59e0b);color:#fff" id="undo-btn" onclick="undoImport()">↩ Rückgängig</button>
   </div>
   <div class="kpi-row" id="dash-kpis"></div>
   <div class="card" style="margin-bottom:14px">
@@ -1067,6 +1068,25 @@ function exportAll(){
   fns.forEach((fn,i)=>setTimeout(fn,i*200));
   setTimeout(()=>{btn.disabled=false;btn.textContent='⬇ Alles herunterladen';},fns.length*200+300);
 }
+function saveBackup(){
+  try{
+    const backup={ts:new Date().toISOString(),data:JSON.parse(JSON.stringify(data))};
+    localStorage.setItem('finanz_v2_undo',JSON.stringify(backup));
+    const ub=document.getElementById('undo-btn');
+    if(ub){ub.style.display='';ub.textContent='↩ Rückgängig ('+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+')';}
+  }catch(e){}
+}
+function undoImport(){
+  const raw=localStorage.getItem('finanz_v2_undo');
+  if(!raw){alert('Kein Backup vorhanden.');return;}
+  const backup=JSON.parse(raw);
+  if(!confirm('Daten vom '+new Date(backup.ts).toLocaleString('de-DE')+' wiederherstellen?'))return;
+  data=backup.data;
+  save();renderDashboard();updateSidebar();
+  localStorage.removeItem('finanz_v2_undo');
+  const ub=document.getElementById('undo-btn');if(ub)ub.style.display='none';
+  alert('✓ Rückgängig gemacht.');
+}
 function importData(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1075,12 +1095,13 @@ function importData(input){
       const imported=JSON.parse(e.target.result);
       if(!imported||typeof imported!=='object'){alert('Ungültige Datei.');return}
       if(!confirm('Alle aktuellen Daten werden überschrieben. Fortfahren?'))return;
+      saveBackup();
       data=imported;
       data.immobilien=(data.immobilien||[]).map(x=>({hypotheken:[],mieteinnahmen:[],...x}));
       data.snapshots=data.snapshots||[];
       data.edelmetalle=migrateEdel(data.edelmetalle||[]);
       save();renderDashboard();updateSidebar();
-      alert('✓ Import erfolgreich — Daten wurden auf Synology gespeichert.');
+      alert('✓ Import erfolgreich. Mit ↩ Rückgängig kannst du den vorherigen Stand wiederherstellen.');
     }catch(err){alert('Fehler beim Import: '+err.message);}
   };
   reader.readAsText(file);
@@ -1094,6 +1115,7 @@ async function importRecovery(){
     const r=await fetch('https://ttbb-maker.github.io/finanz-recovery.json');
     if(!r.ok)throw new Error('HTTP '+r.status);
     const imported=await r.json();
+    saveBackup();
     data=imported;
     data.immobilien=(data.immobilien||[]).map(x=>({hypotheken:[],mieteinnahmen:[],...x}));
     data.snapshots=data.snapshots||[];
@@ -1115,7 +1137,7 @@ async function importTradeRepublic(){
     const r=await fetch('https://ttbb-maker.github.io/tr-import.json');
     if(!r.ok)throw new Error('HTTP '+r.status);
     const imported=await r.json();
-    // Nur Aktien ersetzen – alle anderen Kategorien bleiben erhalten
+    saveBackup();
     data.aktien=imported.aktien||[];
     await save();
     renderDashboard();updateSidebar();
