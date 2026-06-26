@@ -344,24 +344,41 @@ function mergeSeedOdds(){
   return changed;
 }
 
-// Trägt bereits feststehende Endergebnisse ein (überschreibt nichts manuell Gesetztes)
+// Trägt bereits feststehende Endergebnisse ein und ergänzt kommende Spiele
 function importKnownResults(){
   var changed = false;
-  // Feststehende Endergebnisse der Deutschlandspiele
+  var nextId = function(){ return data.spiele.reduce(function(m,s){ return Math.max(m,s.id); }, 0) + 1; };
+
+  // Endergebnisse der Deutschlandspiele (Gruppe E)
   data.spiele.forEach(function(s){
     if (s.heim==='Deutschland' && s.gast==='Curaçao' && !hasResult(s)){ s.hSc=7; s.gSc=1; changed=true; }
-    // 20.06.2026 Endstand 2:1 (korrigiert den zwischenzeitlichen 1:1-Stand)
     if (s.heim==='Deutschland' && s.gast==='Elfenbeinküste' && !(s.hSc===2 && s.gSc===1)){ s.hSc=2; s.gSc=1; changed=true; }
+    if (s.heim==='Ecuador' && s.gast==='Deutschland' && !hasResult(s)){ s.hSc=2; s.gSc=1; changed=true; }
   });
-  // 15.06.2026: Elfenbeinküste 1:0 Ecuador – nur für die Gruppentabelle (keine Tippkarte)
-  var exists = data.spiele.some(function(s){
-    return (s.heim==='Elfenbeinküste' && s.gast==='Ecuador') || (s.heim==='Ecuador' && s.gast==='Elfenbeinküste');
+
+  // Übrige Gruppe-E-Spiele – nur für die Tabelle (keine Tippkarten)
+  var tableGames = [
+    {heim:'Elfenbeinküste', gast:'Ecuador',        ort:'Philadelphia', anpfiff:'2026-06-15T18:00', hSc:1, gSc:0},
+    {heim:'Ecuador',        gast:'Curaçao',        ort:'Kansas City',  anpfiff:'2026-06-21T02:00', hSc:0, gSc:0},
+    {heim:'Curaçao',        gast:'Elfenbeinküste', ort:'Philadelphia', anpfiff:'2026-06-25T22:00', hSc:0, gSc:2}
+  ];
+  tableGames.forEach(function(g){
+    var exists = data.spiele.some(function(s){
+      return (s.heim===g.heim && s.gast===g.gast) || (s.heim===g.gast && s.gast===g.heim);
+    });
+    if (!exists){
+      data.spiele.push({id:nextId(), phase:'Gruppe E', heim:g.heim, gast:g.gast, ort:g.ort, anpfiff:g.anpfiff, hSc:g.hSc, gSc:g.gSc, tableOnly:true, odds:null});
+      changed = true;
+    }
   });
-  if (!exists){
-    var newId = data.spiele.reduce(function(m,s){ return Math.max(m,s.id); }, 0) + 1;
-    data.spiele.push({id:newId, phase:'Gruppe E', heim:'Elfenbeinküste', gast:'Ecuador', ort:'Philadelphia', anpfiff:'2026-06-15T18:00', hSc:1, gSc:0, tableOnly:true, odds:null});
+
+  // Kommende K.o.-Spiele zum Mittippen (Gegner wird ergänzt, sobald feststehend)
+  var hasKo = data.spiele.some(function(s){ return String(s.phase||'').toLowerCase().indexOf('sechzehntel')===0; });
+  if (!hasKo){
+    data.spiele.push({id:nextId(), phase:'Sechzehntelfinale', heim:'Deutschland', gast:'Gegner offen', ort:'Boston', anpfiff:'2026-06-29T22:30', hSc:null, gSc:null, odds:null});
     changed = true;
   }
+
   return changed;
 }
 
