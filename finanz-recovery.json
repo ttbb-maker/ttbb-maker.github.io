@@ -1,0 +1,54 @@
+{
+  "immobilien": [
+    {"hypotheken":[{"id":"mn254t3uvlor","bank":"VBU Unterland","zinssatz":4.6,"tilgungssatz":2,"betrag":100000,"monatlicheRate":550,"startDate":"2023-07-30","endDate":"2033-07-30"}],"mieteinnahmen":[],"id":"mn250nbjp9y9","name":"Bad Rappenau W14 Schillerstraße 6","buy":90000,"val":125000,"rent":660,"status":"vermietet"},
+    {"hypotheken":[{"id":"mn25lzsk8j5g","bank":"Volksbank Unterland","zinssatz":4.69,"tilgungssatz":2,"betrag":100000,"monatlicheRate":557.5,"startDate":"2024-03-30","endDate":"2034-03-30"}],"mieteinnahmen":[],"id":"mn25ijr04ql8","name":"Bad Rappenau W18 Schillerstraße 6","buy":100000,"val":104000,"rent":590,"status":"vermietet"},
+    {"hypotheken":[{"id":"mn26fk3z45bm","bank":"Volksbank BIA","zinssatz":3.59,"tilgungssatz":2,"betrag":99000,"monatlicheRate":460,"startDate":"2025-06-01","endDate":"2035-06-01"}],"mieteinnahmen":[],"id":"mn25xbbz5lre","name":"Bad Rappenau W36 Schillterstraße 6","buy":90000,"val":126000,"rent":550,"status":"vermietet"},
+    {"hypotheken":[{"id":"mn3kblvfywoq","bank":"Volksbank BIA","zinssatz":3.95,"tilgungssatz":1.54,"betrag":140000,"monatlicheRate":640,"startDate":"2025-01-01","endDate":"2035-01-01"}],"mieteinnahmen":[],"id":"mn3fshycpg4p","name":"Bad Rappenau W6 Lortzingstraße 10","buy":135000,"val":161000,"rent":500,"status":"vermietet"},
+    {"hypotheken":[{"id":"mn3k86e4z5qx","bank":"Kreissparkasse Heilbronn","zinssatz":1.04,"tilgungssatz":3,"betrag":220000,"monatlicheRate":741,"startDate":"2021-03-01","endDate":"2036-03-01"},{"id":"mn3k9rjkuwez","bank":"Kreissparkasse Heilbronn","zinssatz":0.7,"tilgungssatz":3.87,"betrag":100000,"monatlicheRate":381,"startDate":"2021-03-01","endDate":"2031-03-01"}],"mieteinnahmen":[],"id":"mn3fz3hrex07","name":"Hüffenhardt Reisengasse 30","buy":472500,"val":631000,"rent":0,"status":"eigennutz"},
+    {"id":"mn3g35ak61eo","name":"Massenbachhausen Heilbronnerstr. 31","buy":632000,"val":856000,"rent":2981.95,"status":"vermietet","hypotheken":[{"id":"mn3kcxmfwquh","bank":"Sparkasse Heilbronn","zinssatz":1.62,"tilgungssatz":2,"betrag":747000,"monatlicheRate":2253,"startDate":"2022-07-01","endDate":"2037-07-01"}],"mieteinnahmen":[]},
+    {"id":"mn3k5ug28v4w","name":"Helmhof Wimpfenerstr. 33","buy":285000,"val":620000,"rent":3025,"status":"vermietet","hypotheken":[{"id":"mn3ke3f4o6ar","bank":"Sparkasse Heilbronn","zinssatz":3.06,"tilgungssatz":2,"betrag":285000,"monatlicheRate":1202,"startDate":"2023-02-01","endDate":"2033-02-01"},{"id":"mn3kh9mu7ecy","bank":"Targo","zinssatz":6.4,"tilgungssatz":10.4,"betrag":48670,"monatlicheRate":681,"startDate":"2023-02-01","endDate":""}],"mieteinnahmen":[]}
+  ],
+  "aktien": [
+    {"id":"19eeb9fbab7775c","ticker":"P911.DE","name":"Dr. Ing. h.c. F. Porsche AG","shares":2,"buy":47.64,"price":47.64},
+    {"id":"19eeb9fbab73832","ticker":"MAIN","name":"Main Street Capital Corp.","shares":6.953867,"buy":44.2,"price":44.2},
+    {"id":"19eeb9fbab7907f","ticker":"BASF.DE","name":"BASF SE","shares":5,"buy":48.81,"price":48.81},
+    {"id":"19eeb9fbab77b15","ticker":"NVO","name":"Novo-Nordisk AS (ADR)","shares":3,"buy":38.86,"price":38.86},
+    {"id":"19eeb9fbab7b0be","ticker":"INTC","name":"Intel Corp.","shares":5,"buy":115.5,"price":115.5},
+    {"id":"19eeb9fbab7ef0c","ticker":"ALV.DE","name":"Allianz SE","shares":0.593643,"buy":400.4,"price":400.4},
+    {"id":"19eeb9fbab7e4f0","ticker":"HIMS","name":"Hims & Hers Health Inc.","shares":4.68384,"buy":29.98,"price":29.98},
+    {"id":"19eeb9fbab7322d","ticker":"NLM.DE","name":"FRoSTA AG","shares":0.93259,"buy":98.2,"price":98.2},
+    {"id":"19eeb9fbab7197a","ticker":"RWE.DE","name":"RWE AG","shares":1,"buy":54.96,"price":54.96},
+    {"id":"19eeb9fbab7c432","ticker":"OGZPY","name":"Gazprom PJSC (ADR) – eingefroren","shares":7,"buy":2.53,"price":2.53},
+    {"id":"19eeb9fbab79ae2","ticker":"EXX5.DE","name":"STOXX Global Dividend 100 EUR (Dist)","shares":14.976514,"buy":38.16,"price":38.16},
+    {"id":"19eeb9fbab7d4e","ticker":"XIACY","name":"Xiaomi Corp.","shares":5,"buy":2.7,"price":2.7},
+    {"id":"19eeb9fbab7b566","ticker":"IDEM.DE","name":"iShares MSCI EM USD (Dist)","shares":22.165688,"buy":60.74,"price":60.74},
+    {"id":"19eeb9fbab74a6","ticker":"VZ","name":"Verizon Communications Inc.","shares":5.341167,"buy":39.68,"price":39.68},
+    {"id":"19eeb9fbab77a43","ticker":"VHYL.DE","name":"Vanguard FTSE All-World High Div. USD (Dist)","shares":38.457318,"buy":78.03,"price":78.03},
+    {"id":"19eeb9fbab7d618","ticker":"PEP","name":"PepsiCo Inc.","shares":4,"buy":123.5,"price":123.5},
+    {"id":"19eeb9fbab78aa6","ticker":"AAPL","name":"Apple Inc.","shares":0.2179,"buy":258.8,"price":258.8},
+    {"id":"19eeb9fbab7c1d0","ticker":"IWDA.DE","name":"iShares Core MSCI World USD (Acc)","shares":100.531942,"buy":156.3,"price":156.3},
+    {"id":"19eeb9fbab7124e","ticker":"WMT","name":"Walmart Inc.","shares":6,"buy":101.5,"price":101.5},
+    {"id":"19eeb9fbab74fac","ticker":"BATS.DE","name":"British American Tobacco PLC","shares":4.384692,"buy":50.22,"price":50.22},
+    {"id":"19eeb9fbab77ab6","ticker":"EIF.TO","name":"Exchange Income Corp.","shares":15,"buy":81.5,"price":81.5},
+    {"id":"19eeb9fbab76e12","ticker":"BTC-EUR","name":"Bitcoin (BTC) – Trade Republic","shares":0.014336,"buy":55759.73,"price":55759.73},
+    {"id":"19eeb9fbab7fab2","ticker":"ETH-EUR","name":"Ethereum (ETH) – Trade Republic","shares":0.242409,"buy":1499.71,"price":1499.71}
+  ],
+  "edelmetalle": [
+    {"id":"mn1p8sr6zch9","metal":"Gold","klassifizierung":"Barren","name":"Hafner","anzahl":2,"qty":2,"unit":"g","buyOz":0,"priceOz":3887,"kaufjahr":2020},
+    {"id":"mn1p9k6o532x","metal":"Gold","klassifizierung":"Barren","name":"Heraeus","anzahl":1,"qty":10,"unit":"g","buyOz":0,"priceOz":3887},
+    {"id":"mn1pchhej3c9","metal":"Gold","klassifizierung":"Münze","name":"Australien Kängeru","anzahl":1,"qty":0.1,"unit":"oz","buyOz":0,"priceOz":3887},
+    {"id":"mn1ppxmql0ea","metal":"Gold","klassifizierung":"Münze","name":"Wiener Philharmoniker","anzahl":1,"qty":0.04,"unit":"oz","buyOz":0,"priceOz":3887},
+    {"id":"mn1prt1kdw70","metal":"Silber","klassifizierung":"Münze","name":"Meaple Leaf","anzahl":5,"qty":1,"unit":"oz","buyOz":0,"priceOz":58.8,"kaufjahr":2020},
+    {"id":"mn1q9pm8wisd","metal":"Silber","klassifizierung":"Münze","name":"Meaple Leaf","anzahl":2,"qty":1,"unit":"oz","buyOz":0,"priceOz":58.8,"kaufjahr":2024},
+    {"id":"mn1qakee0dja","metal":"Silber","klassifizierung":"Münze","name":"Krügerrand","anzahl":5,"qty":1,"unit":"oz","buyOz":0,"priceOz":58.8,"kaufjahr":2020},
+    {"id":"mn1qbeu6z90y","metal":"Silber","klassifizierung":"Münze","name":"Australian Känguru","anzahl":5,"qty":1,"unit":"oz","buyOz":0,"priceOz":58.8,"kaufjahr":2020}
+  ],
+  "kredite": [
+    {"id":"mn3ms37ycxzq","name":"Bondora","amount":6712.75,"rate":6,"maturity":"","status":"aktiv"},
+    {"id":"mn3msu6db3tb","name":"mintos","amount":1705.75,"rate":10.03,"maturity":"","status":"aktiv"}
+  ],
+  "bauspar": [
+    {"id":"mn4b7zkvznbi","name":"Kreissparkasse Heilbronn","rate":0,"target":0,"saved":4714.57,"date":""}
+  ],
+  "snapshots": []
+}

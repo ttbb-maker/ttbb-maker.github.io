@@ -98,6 +98,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['error' => 'Ungültige JSON-Daten']);
         exit;
     }
+    // Vor dem Überschreiben: tägliches Backup anlegen
+    if (file_exists(DATA_FILE)) {
+        $backupFile = __DIR__ . '/finanzuebersicht_backup_' . date('Y-m-d') . '.json';
+        if (!file_exists($backupFile)) {
+            copy(DATA_FILE, $backupFile);
+        }
+        // Backups älter als 30 Tage löschen
+        foreach (glob(__DIR__ . '/finanzuebersicht_backup_*.json') as $f) {
+            if (filemtime($f) < strtotime('-30 days')) @unlink($f);
+        }
+    }
     if (file_put_contents(DATA_FILE, json_encode($data)) === false) {
         http_response_code(500);
         echo json_encode(['error' => 'Speichern fehlgeschlagen']);
