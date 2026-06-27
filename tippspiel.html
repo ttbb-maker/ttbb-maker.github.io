@@ -293,7 +293,8 @@ var FLAGS = {
   'Deutschland':'🇩🇪',
   'Curaçao':'🇨🇼','Curacao':'🇨🇼',
   'Elfenbeinküste':'🇨🇮','Elfenbeinkuste':'🇨🇮',
-  'Ecuador':'🇪🇨'
+  'Ecuador':'🇪🇨',
+  'Paraguay':'🇵🇾'
 };
 function flag(name){ return FLAGS[name] || '⚽'; }
 
@@ -372,10 +373,15 @@ function importKnownResults(){
     }
   });
 
-  // Kommende K.o.-Spiele zum Mittippen (Gegner wird ergänzt, sobald feststehend)
-  var hasKo = data.spiele.some(function(s){ return String(s.phase||'').toLowerCase().indexOf('sechzehntel')===0; });
-  if (!hasKo){
-    data.spiele.push({id:nextId(), phase:'Sechzehntelfinale', heim:'Deutschland', gast:'Gegner offen', ort:'Boston', anpfiff:'2026-06-29T22:30', hSc:null, gSc:null, odds:null});
+  // Sechzehntelfinale: Deutschland – Paraguay (Gegner steht fest)
+  var ko = data.spiele.find(function(s){ return String(s.phase||'').toLowerCase().indexOf('sechzehntel')===0 && s.heim==='Deutschland'; });
+  if (!ko){
+    data.spiele.push({id:nextId(), phase:'Sechzehntelfinale', heim:'Deutschland', gast:'Paraguay', ort:'Foxborough (Boston)', anpfiff:'2026-06-29T22:30', hSc:null, gSc:null, odds:{h:1.35, d:4.80, a:8.50}});
+    changed = true;
+  } else if (ko.gast === 'Gegner offen'){
+    ko.gast = 'Paraguay';
+    ko.ort = 'Foxborough (Boston)';
+    if (!ko.odds) ko.odds = {h:1.35, d:4.80, a:8.50};
     changed = true;
   }
 
