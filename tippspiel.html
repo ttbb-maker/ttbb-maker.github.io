@@ -308,7 +308,14 @@ function seedSpiele(){
 }
 
 async function loadData(){
-  var local = JSON.parse(localStorage.getItem('wm_tipp_data') || 'null');
+  var local  = JSON.parse(localStorage.getItem('wm_tipp_data')   || 'null');
+  var backup = JSON.parse(localStorage.getItem('wm_tipp_backup') || 'null');
+  // bestes lokales Tipp-Set dieses Geräts (für Wiederherstellung)
+  var localTips  = (local  && Array.isArray(local.tipps))  ? local.tipps  : [];
+  var backupTips = (backup && Array.isArray(backup.tipps)) ? backup.tipps : [];
+  var bestLocal  = backupTips.length >= localTips.length ? backupTips : localTips;
+
+  var loadedOk = false;
   var controller = new AbortController();
   var timer = setTimeout(function(){controller.abort();}, 6000);
   try {
@@ -318,7 +325,8 @@ async function loadData(){
       var remote = await r.json();
       data = normalize(remote);
       setSyncDot(true);
-      if (!data.spiele.length) { data.spiele = seedSpiele(); await save(); }
+      loadedOk = true;
+      if (!data.spiele.length) { data.spiele = seedSpiele(); }
     } else {
       data = local ? normalize(local) : {spiele:seedSpiele(), tipps:[]};
       setSyncDot(false);
@@ -329,8 +337,19 @@ async function loadData(){
     setSyncDot(false);
     if (!local) showToast('Offline – Spielplan wird lokal angezeigt');
   }
+
+  // Wiederherstellung: Server hat weniger Tipps als dieses Gerät -> anbieten
+  if (loadedOk && bestLocal.length > data.tipps.length){
+    if (confirm('Auf dem Server sind nur ' + data.tipps.length + ' Tipp(s), auf diesem Gerät aber ' + bestLocal.length + '.\n\nMöchtest du die Tipps von diesem Gerät wiederherstellen?')){
+      data.tipps = bestLocal.slice();
+      await save();
+      showToast(bestLocal.length + ' Tipps wiederhergestellt ✅');
+    }
+  }
+
+  // Spielplan/Ergebnisse nur ergänzen & speichern, wenn der Server-Abruf KLAPPTE
   var ch1 = mergeSeedOdds(), ch2 = importKnownResults();
-  if (ch1 || ch2) { save(); }
+  if (loadedOk && (ch1 || ch2)) { save(); }
   render();
 }
 
@@ -395,6 +414,8 @@ function normalize(d){
 
 async function save(){
   localStorage.setItem('wm_tipp_data', JSON.stringify(data));
+  // Sicherung: nur schreiben, wenn Tipps vorhanden sind (nie durch "leer" überschreiben)
+  if (data.tipps && data.tipps.length > 0) localStorage.setItem('wm_tipp_backup', JSON.stringify(data));
   try {
     var r = await fetch(API_URL, {method:'POST', headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'}, body:JSON.stringify(data)});
     setSyncDot(r.ok);
