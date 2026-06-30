@@ -44,6 +44,16 @@
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent; }
   .header-meta { font-size:11px;color:var(--muted);margin-top:8px; }
 
+  /* Sieger / Spitzenreiter */
+  .winner { margin:16px 20px 0;background:linear-gradient(135deg,rgba(255,206,0,.22),rgba(221,0,0,.16));border:1px solid var(--gold);border-radius:var(--radius);padding:18px 16px;text-align:center;box-shadow:0 8px 26px rgba(0,0,0,.45);position:relative;overflow:hidden; }
+  .winner::after { content:'';position:absolute;inset:0;background:radial-gradient(420px 120px at 50% -30px,rgba(255,206,0,.30),transparent 70%);pointer-events:none; }
+  .winner .w-label { font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:800; }
+  .winner .w-trophy { font-size:46px;line-height:1;margin:8px 0 4px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+  .winner .w-name { font-size:27px;font-weight:800;color:#fff;line-height:1.15;word-break:break-word; }
+  .winner .w-pts { font-size:13px;color:var(--text);margin-top:6px; }
+  .winner .w-pts b { color:var(--gold); }
+  .winner .w-sub { font-size:11px;color:var(--muted);margin-top:6px; }
+
   .name-card { margin:18px 20px 0;background:rgba(24,24,32,.80);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px; }
   .name-card label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:6px; }
   .name-row { display:flex;gap:8px;align-items:center; }
@@ -210,6 +220,9 @@
   <h1>Familien-Tippspiel</h1>
   <div class="header-meta" id="headerMeta">Tippt die Deutschlandspiele &ndash; wer kennt das DFB-Team am besten? &#9917;</div>
 </div>
+
+<!-- Sieger / Spitzenreiter -->
+<div class="winner" id="winnerBanner" style="display:none;"></div>
 
 <!-- Name -->
 <div class="name-card" id="nameCard"></div>
@@ -392,16 +405,14 @@ function importKnownResults(){
     }
   });
 
-  // Sechzehntelfinale: Deutschland – Paraguay (Gegner steht fest)
+  // Sechzehntelfinale: Deutschland 1:1 Paraguay (Deutschland n.E. ausgeschieden)
   var ko = data.spiele.find(function(s){ return String(s.phase||'').toLowerCase().indexOf('sechzehntel')===0 && s.heim==='Deutschland'; });
   if (!ko){
-    data.spiele.push({id:nextId(), phase:'Sechzehntelfinale', heim:'Deutschland', gast:'Paraguay', ort:'Foxborough (Boston)', anpfiff:'2026-06-29T22:30', hSc:null, gSc:null, odds:{h:1.35, d:4.80, a:8.50}});
+    data.spiele.push({id:nextId(), phase:'Sechzehntelfinale', heim:'Deutschland', gast:'Paraguay', ort:'Foxborough (Boston)', anpfiff:'2026-06-29T22:30', hSc:1, gSc:1, odds:{h:1.35, d:4.80, a:8.50}});
     changed = true;
-  } else if (ko.gast === 'Gegner offen'){
-    ko.gast = 'Paraguay';
-    ko.ort = 'Foxborough (Boston)';
-    if (!ko.odds) ko.odds = {h:1.35, d:4.80, a:8.50};
-    changed = true;
+  } else {
+    if (ko.gast === 'Gegner offen'){ ko.gast = 'Paraguay'; ko.ort = 'Foxborough (Boston)'; if (!ko.odds) ko.odds = {h:1.35, d:4.80, a:8.50}; changed = true; }
+    if (!hasResult(ko)){ ko.hSc = 1; ko.gSc = 1; changed = true; }
   }
 
   return changed;
@@ -511,11 +522,34 @@ function standings(){
 
 // --- Render ---
 function render(){
+  renderWinner();
   renderName();
   renderBoard();
   renderGames();
   renderGroupTable();
   renderNameList();
+}
+
+// Großer Sieger-/Spitzenreiter-Banner auf der Startseite
+function renderWinner(){
+  var box = document.getElementById('winnerBanner');
+  if (!box) return;
+  var st = standings().filter(function(x){ return x.abg>0; });
+  if (!st.length){ box.style.display='none'; return; }
+  var top = st[0];
+  var leaders = st.filter(function(x){ return x.pts===top.pts; });
+  var tippbare = data.spiele.filter(function(s){ return !s.tableOnly; });
+  var fertig = tippbare.length>0 && tippbare.every(function(s){ return hasResult(s); });
+  var names = leaders.map(function(l){ return esc(l.name); }).join(' & ');
+  var geteilt = leaders.length>1;
+  box.style.display = 'block';
+  box.innerHTML =
+    '<div class="w-label">'+(fertig ? '🏆 Gewinner des Tippspiels' : '⭐ Aktueller Spitzenreiter')+'</div>'+
+    '<div class="w-trophy">'+(fertig ? '🏆' : '⭐')+'</div>'+
+    '<div class="w-name">'+names+'</div>'+
+    '<div class="w-pts">'+(geteilt ? 'punktgleich an der Spitze · ' : '')+'<b>'+top.pts+' Punkte</b></div>'+
+    (fertig ? '<div class="w-sub">Glückwunsch zum Sieg im Familien-Tippspiel! 🎉</div>'
+            : '<div class="w-sub">'+top.hits+'× exakt getippt</div>');
 }
 
 // --- Gruppentabelle (Gruppe E) ---
