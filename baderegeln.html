@@ -54,7 +54,31 @@
     background: var(--card); border-radius: var(--radius);
     padding: 22px 18px; width: 100%; max-width: 460px;
     display: flex; flex-direction: column; align-items: center; gap: 16px;
+    position: relative;
   }
+
+  /* ── VORLESEN (TTS) ── */
+  .tts-toggle {
+    padding: 8px 16px; border-radius: 50px; margin-bottom: 12px;
+    border: 2px solid #2a5470; background: var(--card);
+    color: var(--muted); font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .tts-toggle.on { border-color: var(--green); color: var(--green); }
+  .speak-btn {
+    position: absolute; top: 12px; right: 12px;
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 2px solid #2a5470; background: #0e2a3d;
+    font-size: 1.15rem; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .speak-btn:hover { border-color: var(--blue); }
+  .speak-btn.speaking { border-color: var(--accent); animation: speakPulse 1s infinite; }
+  @keyframes speakPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+  body.no-tts .tts-toggle, body.no-tts .speak-btn { display: none; }
 
   /* ── LEARN MODE ── */
   .rule-badge {
@@ -196,6 +220,8 @@
 <h1>🏊 Baderegeln Lernen</h1>
 <p class="subtitle">Die DLRG-Baderegeln für dein Schwimmabzeichen</p>
 
+<button class="tts-toggle" id="ttsToggle" onclick="toggleTTS()">🔊 Vorlesen: AN</button>
+
 <div class="mode-tabs">
   <button class="mode-tab active" id="tab-learn" onclick="setMode('learn')">📖 Lernen</button>
   <button class="mode-tab" id="tab-quiz" onclick="setMode('quiz')">🎯 Quiz</button>
@@ -213,6 +239,7 @@
 <!-- LEARN MODE -->
 <div id="learnView" style="width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;">
   <div class="card">
+    <button class="speak-btn" id="speakLearn" onclick="speakRule()" title="Vorlesen">🔊</button>
     <div class="rule-badge" id="ruleBadge">1</div>
     <div class="rule-icon" id="ruleIcon"></div>
     <div class="rule-title" id="ruleTitle"></div>
@@ -232,6 +259,7 @@
 <!-- QUIZ MODE -->
 <div id="quizView" style="display:none;width:100%;max-width:460px;">
   <div class="card">
+    <button class="speak-btn" onclick="speakQuizQuestion()" title="Vorlesen">🔊</button>
     <div class="quiz-label">Was ist hier los?</div>
     <div class="scenario-text" id="scenarioText"></div>
     <div class="options" id="options"></div>
@@ -270,6 +298,7 @@
 
   <!-- Frage -->
   <div class="card" id="examQuestion" style="display:none">
+    <button class="speak-btn" onclick="speakExamQuestion()" title="Vorlesen">🔊</button>
     <div class="quiz-label" id="examQLabel"></div>
     <div class="scenario-text" id="examScenarioText"></div>
     <div class="options" id="examOptions"></div>
@@ -351,8 +380,82 @@
     saveProgress();
   }
 
+  // ── VORLESEN (Text-to-Speech) ─────────────────────────────────────────────────
+  const TTS_KEY = 'baderegeln-tts';
+  const ttsAvailable = 'speechSynthesis' in window;
+  let ttsOn = ttsAvailable && localStorage.getItem(TTS_KEY) !== 'aus';
+  let germanVoice = null;
+
+  if (!ttsAvailable) document.body.classList.add('no-tts');
+
+  function pickVoice() {
+    const voices = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
+    // Bevorzugt natürlichere Stimmen (Google/Microsoft), sonst erste deutsche Stimme
+    germanVoice = voices.find(v => /google|microsoft|anna|petra/i.test(v.name)) || voices[0] || null;
+  }
+  if (ttsAvailable) {
+    pickVoice();
+    speechSynthesis.onvoiceschanged = pickVoice;
+  }
+
+  function stripEmoji(text) {
+    return text.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
+  }
+
+  function speak(text) {
+    if (!ttsAvailable) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(stripEmoji(text));
+    u.lang = 'de-DE';
+    if (germanVoice) u.voice = germanVoice;
+    u.rate = 0.92; // etwas langsamer für Kinder
+    document.querySelectorAll('.speak-btn').forEach(b => b.classList.remove('speaking'));
+    const activeBtn = currentSpeakBtn();
+    if (activeBtn) {
+      activeBtn.classList.add('speaking');
+      u.onend = u.onerror = () => activeBtn.classList.remove('speaking');
+    }
+    speechSynthesis.speak(u);
+  }
+
+  function currentSpeakBtn() {
+    if (mode === 'learn') return document.getElementById('speakLearn');
+    if (mode === 'quiz') return document.querySelector('#quizView .speak-btn');
+    if (mode === 'exam') return document.querySelector('#examQuestion .speak-btn');
+    return null;
+  }
+
+  function stopSpeaking() {
+    if (!ttsAvailable) return;
+    speechSynthesis.cancel();
+    document.querySelectorAll('.speak-btn').forEach(b => b.classList.remove('speaking'));
+  }
+
+  // Wenn "Vorlesen: AN", wird automatisch vorgelesen; die 🔊-Knöpfe gehen immer.
+  function autoSpeak(text) { if (ttsOn) speak(text); }
+
+  function toggleTTS() {
+    ttsOn = !ttsOn;
+    if (!ttsOn) stopSpeaking();
+    localStorage.setItem(TTS_KEY, ttsOn ? 'an' : 'aus');
+    updateTTSToggle();
+    if (ttsOn) speak('Vorlesen ist an.');
+  }
+
+  function updateTTSToggle() {
+    const btn = document.getElementById('ttsToggle');
+    btn.textContent = ttsOn ? '🔊 Vorlesen: AN' : '🔇 Vorlesen: AUS';
+    btn.classList.toggle('on', ttsOn);
+  }
+
+  function optionsSpeechText(container, scenario) {
+    const btns = [...container.querySelectorAll('.option-btn')];
+    return scenario + ' — Welche Baderegel passt? ' + btns.map((b, i) => 'Antwort ' + (i + 1) + ': ' + b.textContent + '.').join(' ');
+  }
+
   // ── Mode switching ────────────────────────────────────────────────────────────
   function setMode(m) {
+    stopSpeaking();
     mode = m;
     document.querySelectorAll('.mode-tab').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + m).classList.add('active');
@@ -374,7 +477,7 @@
     regeln.forEach((r, i) => {
       const d = document.createElement('div');
       d.className = 'dot' + (i === ruleIndex ? ' active' : isMastered(r.id) ? ' mastered' : '');
-      d.onclick = () => showRule(i);
+      d.onclick = () => { showRule(i); autoSpeak('Regel ' + regeln[ruleIndex].id + ': ' + regeln[ruleIndex].text); };
       dots.appendChild(d);
     });
   }
@@ -399,15 +502,26 @@
         : 'Gemeistert: <b>' + mastered + '</b> von 10 Regeln · Sterne sammelst du im 🎯 Quiz';
   }
 
+  function speakRule() {
+    const r = regeln[ruleIndex];
+    let text = 'Regel ' + r.id + ': ' + r.text;
+    if (document.getElementById('ruleExplain').style.display !== 'none') {
+      text += ' Warum ist das wichtig? ' + r.explain;
+    }
+    speak(text);
+  }
+
   function toggleExplain() {
     const box = document.getElementById('ruleExplain');
     const showing = box.style.display !== 'none';
     box.style.display = showing ? 'none' : '';
     document.getElementById('flipHint').textContent = showing ? '👉 Tippen für: Warum ist das wichtig?' : '👆 Tippen zum Verstecken';
+    if (!showing) autoSpeak('Warum ist das wichtig? ' + regeln[ruleIndex].explain);
+    else stopSpeaking();
   }
 
-  function prevRule() { showRule(ruleIndex - 1); }
-  function nextRule() { showRule(ruleIndex + 1); }
+  function prevRule() { showRule(ruleIndex - 1); autoSpeak('Regel ' + regeln[ruleIndex].id + ': ' + regeln[ruleIndex].text); }
+  function nextRule() { showRule(ruleIndex + 1); autoSpeak('Regel ' + regeln[ruleIndex].id + ': ' + regeln[ruleIndex].text); }
 
   // ── QUIZ MODE ─────────────────────────────────────────────────────────────────
   function shuffle(arr) {
@@ -455,6 +569,11 @@
     fb.textContent = '';
     document.getElementById('explainBox').style.display = 'none';
     document.getElementById('btnNext').style.display = 'none';
+    autoSpeak(optionsSpeechText(document.getElementById('options'), currentScenario.text));
+  }
+
+  function speakQuizQuestion() {
+    speak(optionsSpeechText(document.getElementById('options'), currentScenario.text));
   }
 
   function selectOption(btn, chosenRule, correctRule) {
@@ -488,6 +607,8 @@
     document.getElementById('scoreWrong').textContent = score.wrong;
     document.getElementById('streakDisplay').textContent = score.streak;
     document.getElementById('btnNext').style.display = '';
+
+    autoSpeak((isCorrect ? 'Richtig! ' : 'Nicht ganz! Das war Regel ' + correctRule.id + ': ' + correctRule.title + '. ') + correctRule.explain);
   }
 
   // ── MEMORY MODE ───────────────────────────────────────────────────────────────
@@ -522,6 +643,7 @@
         ? '<div class="front"><span class="mem-icon">' + r.icon + '</span></div>'
         : '<div class="front"><span class="mem-word">' + r.short + '</span></div>';
       el.innerHTML = '<span class="back">🌊</span>' + front;
+      el.dataset.kind = c.kind;
       el.onclick = () => flipCard(el);
       grid.appendChild(el);
     });
@@ -530,6 +652,10 @@
   function flipCard(el) {
     if (memLock || el.classList.contains('open') || el.classList.contains('done')) return;
     el.classList.add('open');
+    if (el.dataset.kind === 'word') {
+      const r = regeln.find(x => x.id === Number(el.dataset.ruleId));
+      autoSpeak(r.short);
+    }
     memOpen.push(el);
     if (memOpen.length < 2) return;
 
@@ -548,6 +674,7 @@
         fb.textContent = '🎉 Geschafft in ' + memMoves + ' Zügen!';
         fb.className = 'feedback correct';
         launchConfetti();
+        autoSpeak('Super! Geschafft in ' + memMoves + ' Zügen!');
       }
     } else {
       memLock = true;
@@ -609,6 +736,12 @@
 
     document.getElementById('examProgressFill').style.width = (examIndex / 10 * 100) + '%';
     document.getElementById('examProgressLabel').textContent = 'Frage ' + (examIndex + 1) + ' / 10 · Richtig: ' + examCorrect;
+    autoSpeak('Frage ' + (examIndex + 1) + ': ' + optionsSpeechText(document.getElementById('examOptions'), q.text));
+  }
+
+  function speakExamQuestion() {
+    const q = examQuestions[examIndex];
+    speak('Frage ' + (examIndex + 1) + ': ' + optionsSpeechText(document.getElementById('examOptions'), q.text));
   }
 
   function selectExamOption(btn, chosenRule, correctRule) {
@@ -633,6 +766,8 @@
     const nextBtn = document.getElementById('examBtnNext');
     nextBtn.textContent = examIndex === 9 ? 'Ergebnis anzeigen 🏅' : 'Weiter →';
     nextBtn.style.display = '';
+
+    autoSpeak(isCorrect ? 'Richtig!' : 'Nicht ganz! Das war Regel ' + correctRule.id + ': ' + correctRule.title + '.');
   }
 
   function nextExamQuestion() {
@@ -664,6 +799,7 @@
     document.getElementById('examBestResult').textContent = (isNewBest && examCorrect > 0 ? '🎊 Neuer Rekord! ' : '') + bestExamLabel();
 
     if (examCorrect >= 8) launchConfetti();
+    autoSpeak(title + ' ' + text);
   }
 
   // ── CONFETTI ──────────────────────────────────────────────────────────────────
@@ -693,6 +829,7 @@
     }
   });
 
+  updateTTSToggle();
   showRule(0);
 </script>
 </body>
