@@ -563,7 +563,8 @@
     const u = new SpeechSynthesisUtterance(stripEmoji(text));
     u.lang = 'de-DE';
     if (germanVoice) u.voice = germanVoice;
-    u.rate = 0.92; // etwas langsamer für Kinder
+    u.rate = 0.9;   // etwas langsamer, damit Kinder gut mitkommen
+    u.pitch = 1.15; // etwas höhere Tonlage – klingt freundlicher und weniger technisch
     document.querySelectorAll('.speak-btn').forEach(b => b.classList.remove('speaking'));
     const activeBtn = currentSpeakBtn();
     if (activeBtn) {
