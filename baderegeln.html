@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baderegeln Lernen</title>
+<style>
+  :root {
+    --bg: #0e2a3d;
+    --card: #133a52;
+    --accent: #ffd166;
+    --green: #06d6a0;
+    --red: #ef476f;
+    --blue: #4cc9f0;
+    --text: #f8f9fa;
+    --muted: #8fb3c7;
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  h1 { font-size: 1.7rem; font-weight: 900; color: var(--accent); text-align: center; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; text-align: center; }
+
+  .score-bar {
+    display: flex; gap: 16px;
+    background: var(--card); border-radius: 50px;
+    padding: 8px 22px; margin-bottom: 14px;
+    font-size: 1rem; font-weight: 700;
+  }
+  .score-bar span { color: var(--muted); font-weight: 400; margin-right: 4px; }
+  .score-correct { color: var(--green); }
+  .score-wrong { color: var(--red); }
+
+  .mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .mode-tab {
+    padding: 10px 18px; border-radius: 50px;
+    border: 2px solid var(--card); background: var(--card);
+    color: var(--muted); font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .mode-tab.active { border-color: var(--accent); color: var(--accent); background: #274a63; }
+
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 22px 18px; width: 100%; max-width: 460px;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+
+  /* ── LEARN MODE ── */
+  .rule-badge {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--accent); color: #12283a;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 1.2rem;
+  }
+  .rule-icon { font-size: 3.2rem; text-align: center; }
+  .rule-title { font-size: 1.15rem; font-weight: 800; text-align: center; color: var(--text); }
+  .rule-text { font-size: 1rem; text-align: center; color: var(--text); line-height: 1.4; }
+  .rule-explain {
+    background: #0e2a3d; border-radius: 14px; padding: 14px;
+    font-size: 0.9rem; color: var(--muted); line-height: 1.5;
+    border-left: 4px solid var(--blue);
+  }
+  .rule-explain-label { color: var(--blue); font-weight: 700; margin-right: 4px; }
+  .flip-hint { font-size: 0.75rem; color: var(--muted); text-align: center; cursor: pointer; }
+
+  .nav-row { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; max-width: 460px; }
+  .nav-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: var(--card); color: var(--accent); font-size: 1.3rem;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .nav-btn:hover { filter: brightness(1.2); }
+  .dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--card); border: 2px solid #2a5470; cursor: pointer; }
+  .dot.active { background: var(--accent); border-color: var(--accent); }
+
+  /* ── QUIZ MODE ── */
+  .quiz-label { font-size: 0.8rem; color: var(--blue); font-weight: 700; text-align: center; letter-spacing: .04em; }
+  .scenario-text { font-size: 1.05rem; text-align: center; line-height: 1.5; }
+  .options { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .option-btn {
+    padding: 12px 16px; border-radius: 14px; border: 2px solid #2a5470;
+    background: #0e2a3d; color: var(--text); font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; text-align: left; transition: all 0.15s;
+  }
+  .option-btn:hover:not(:disabled) { border-color: var(--blue); }
+  .option-btn.correct { border-color: var(--green); background: #0c3a34; color: var(--green); }
+  .option-btn.wrong { border-color: var(--red); background: #3a1420; color: var(--red); }
+  .option-btn:disabled { cursor: default; }
+
+  /* ── FEEDBACK ── */
+  .feedback {
+    font-size: 1.1rem; font-weight: 800; text-align: center;
+    min-height: 1.6rem; transition: opacity 0.3s;
+  }
+  .feedback.correct { color: var(--green); }
+  .feedback.wrong { color: var(--red); }
+  .feedback.hidden { opacity: 0; }
+  .explain-box {
+    background: #0e2a3d; border-radius: 14px; padding: 12px 14px;
+    font-size: 0.88rem; color: var(--muted); line-height: 1.5;
+    border-left: 4px solid var(--blue); display: none; width: 100%;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 14px 36px; border-radius: 50px; border: none;
+    font-size: 1.05rem; font-weight: 800; cursor: pointer;
+    transition: all 0.15s; width: 100%; max-width: 280px;
+  }
+  .btn-next { background: var(--blue); color: #0e2a3d; }
+  .btn-next:hover { filter: brightness(1.1); transform: scale(1.02); }
+
+  @media (max-width: 360px) {
+    .rule-icon { font-size: 2.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🏊 Baderegeln Lernen</h1>
+<p class="subtitle">Für dein Schwimmabzeichen</p>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="setMode('learn',this)">📖 Lernen</button>
+  <button class="mode-tab" onclick="setMode('quiz',this)">🎯 Quiz</button>
+</div>
+
+<!-- SCORE BAR (quiz mode only) -->
+<div class="score-bar" id="scoreBar" style="display:none">
+  <div><span>✅</span><span class="score-correct" id="scoreCorrect">0</span></div>
+  <div><span>❌</span><span class="score-wrong" id="scoreWrong">0</span></div>
+  <div><span>🔥</span><span id="streakDisplay">0</span></div>
+</div>
+
+<!-- LEARN MODE -->
+<div id="learnView">
+  <div class="card">
+    <div class="rule-badge" id="ruleBadge">1</div>
+    <div class="rule-icon" id="ruleIcon"></div>
+    <div class="rule-title" id="ruleTitle"></div>
+    <div class="rule-text" id="ruleText"></div>
+    <div class="flip-hint" id="flipHint" onclick="toggleExplain()">👉 Tippen für: Warum ist das wichtig?</div>
+    <div class="rule-explain" id="ruleExplain" style="display:none"></div>
+  </div>
+  <br>
+  <div class="nav-row">
+    <button class="nav-btn" onclick="prevRule()">◀</button>
+    <div class="dots" id="dots"></div>
+    <button class="nav-btn" onclick="nextRule()">▶</button>
+  </div>
+</div>
+
+<!-- QUIZ MODE -->
+<div id="quizView" style="display:none">
+  <div class="card">
+    <div class="quiz-label">Was ist hier los?</div>
+    <div class="scenario-text" id="scenarioText"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback hidden" id="feedback"></div>
+    <div class="explain-box" id="explainBox"></div>
+    <button class="btn btn-next" id="btnNext" onclick="nextQuestion()" style="display:none">Weiter →</button>
+  </div>
+</div>
+
+<script>
+  // ── Data: die 10 Baderegeln der DLRG ────────────────────────────────────────
+  const regeln = [
+    { id: 1, icon: '😊', title: 'Nur baden, wenn du dich wohlfühlst', text: 'Gehe nur zum Baden, wenn du dich wohlfühlst.', explain: 'Wenn du krank bist oder dich schlapp fühlst, ist dein Körper schwächer. Dann ist Schwimmen gefährlicher als sonst.' },
+    { id: 2, icon: '🚿', title: 'Vorher abkühlen und duschen', text: 'Kühle dich ab und dusche, bevor du ins Wasser gehst.', explain: 'Bist du erhitzt (z.B. von der Sonne) und springst plötzlich ins kalte Wasser, kann das einen Kälteschock und Kreislaufprobleme geben.' },
+    { id: 3, icon: '🍽️', title: 'Nicht mit vollem oder leerem Magen', text: 'Gehe niemals mit vollem oder ganz leerem Magen ins Wasser.', explain: 'Mit vollem Bauch kann dir beim Schwimmen schlecht werden (Seitenstechen). Mit leerem Magen fehlt dir die Energie und dir kann schwindelig werden.' },
+    { id: 4, icon: '🚶', title: 'Nichtschwimmer nur bis zum Bauch', text: 'Gehe als Nichtschwimmer nur bis zum Bauch ins Wasser.', explain: 'Wer noch nicht schwimmen kann, darf nicht ins tiefe Wasser gehen – dort verliert man schnell den Boden unter den Füßen.' },
+    { id: 5, icon: '📢', title: 'Nur um Hilfe rufen, wenn es ernst ist', text: 'Rufe nie um Hilfe, wenn du nicht wirklich in Gefahr bist – aber hilf anderen, wenn sie Hilfe brauchen.', explain: 'Falscher Alarm ist gefährlich: Wenn du aus Spaß "Hilfe!" rufst, könnte niemand mehr rechtzeitig kommen, wenn wirklich jemand in Not ist.' },
+    { id: 6, icon: '💪', title: 'Überschätze dich nicht', text: 'Überschätze dich und deine Kraft nicht.', explain: 'Auch gute Schwimmer werden müde. Schwimm nicht zu weit raus oder gegen starke Strömung, wenn du nicht sicher zurückkommst.' },
+    { id: 7, icon: '🚤', title: 'Nicht baden, wo Boote fahren', text: 'Bade nicht dort, wo Schiffe und Boote fahren.', explain: 'Boote können dich im Wasser schlecht sehen. Du könntest angefahren oder von der Schiffsschraube verletzt werden.' },
+    { id: 8, icon: '⛈️', title: 'Bei Gewitter raus aus dem Wasser', text: 'Bei Gewitter ist Baden lebensgefährlich – verlasse sofort das Wasser und suche ein festes Gebäude auf.', explain: 'Wasser leitet Strom sehr gut. Ein Blitz, der ins Wasser einschlägt, ist für alle Schwimmenden lebensgefährlich.' },
+    { id: 9, icon: '🗑️', title: 'Wasser und Umgebung sauber halten', text: 'Halte das Wasser und seine Umgebung sauber, wirf Abfälle in den Mülleimer.', explain: 'Müll im Wasser ist nicht nur eklig, sondern kann auch Tiere verletzen und andere Badegäste gefährden.' },
+    { id: 10, icon: '🤿', title: 'Nur ins freie, tiefe Wasser springen', text: 'Springe nur ins Wasser, wenn es frei und tief genug ist.', explain: 'Springst du in zu flaches Wasser oder auf jemanden drauf, kann das schwere Verletzungen verursachen. Erst schauen, dann springen!' },
+  ];
+
+  const scenarios = [
+    { text: 'Nach dem Toben in der prallen Sonne willst du sofort ins kühle Schwimmbecken springen.', ruleId: 2 },
+    { text: 'Du hast Fieber und fühlst dich schlapp, aber deine Freunde wollen unbedingt ins Freibad.', ruleId: 1 },
+    { text: 'Du hast gerade einen riesigen Teller Spaghetti gegessen und willst sofort ins Wasser springen.', ruleId: 3 },
+    { text: 'Du hast seit dem Frühstück nichts mehr gegessen, bist total hungrig, gehst aber trotzdem lange schwimmen.', ruleId: 3 },
+    { text: 'Du kannst noch nicht schwimmen und watest im Freibad langsam Richtung tiefes Becken.', ruleId: 4 },
+    { text: 'Aus Spaß rufst du laut "Hilfe, ich ertrinke!", obwohl dir gar nichts passiert.', ruleId: 5 },
+    { text: 'Ein anderes Kind ruft wirklich um Hilfe, weil es untergeht – du schwimmst einfach weiter.', ruleId: 5 },
+    { text: 'Obwohl du schon müde bist, schwimmst du im See noch weiter Richtung Mitte, um zu zeigen, wie stark du bist.', ruleId: 6 },
+    { text: 'Du planschst genau dort im See, wo gerade ein Motorboot vorbeifährt.', ruleId: 7 },
+    { text: 'Es blitzt und donnert, aber du bleibst einfach im Freibad-Becken weiterschwimmen.', ruleId: 8 },
+    { text: 'Du wirfst deine leere Chipstüte einfach ins Wasser, statt sie in den Mülleimer zu werfen.', ruleId: 9 },
+    { text: 'Du springst kopfüber von der Mauer ins Wasser, ohne vorher zu schauen, ob es tief genug ist und niemand darunter schwimmt.', ruleId: 10 },
+    { text: 'Bevor du ins Schwimmbecken springst, duschst du kurz ab, weil du vorher in der Sonne gelegen hast.', ruleId: 2 },
+    { text: 'Du fühlst dich krank und hast Halsschmerzen, gehst aber trotzdem mit ins Schwimmbad.', ruleId: 1 },
+    { text: 'Beim Baden im See schwimmst du absichtlich in die Fahrrinne, wo die Ausflugsboote fahren.', ruleId: 7 },
+    { text: 'Du bist noch Nichtschwimmer, aber deine Freunde schwimmen im tiefen Bereich – du gehst einfach hinterher.', ruleId: 4 },
+    { text: 'Am Seeufer liegt eine leere Flasche – du hebst sie auf und wirfst sie in den Mülleimer.', ruleId: 9 },
+    { text: 'Es donnert in der Ferne. Du gehst sofort aus dem Wasser und suchst ein festes Gebäude auf.', ruleId: 8 },
+    { text: 'Du springst erst vom Beckenrand, nachdem du geschaut hast, dass die Stelle frei und tief genug ist.', ruleId: 10 },
+    { text: 'Ein Freund tut nur so, als würde er ertrinken, um dich zu erschrecken, und schreit "Hilfe!".', ruleId: 5 },
+  ];
+
+  let mode = 'learn';
+  let ruleIndex = 0;
+  let score = { correct: 0, wrong: 0, streak: 0 };
+  let quizPool = [];
+  let currentScenario = null;
+  let answered = false;
+
+  // ── Mode switching ────────────────────────────────────────────────────────────
+  function setMode(m, btn) {
+    mode = m;
+    document.querySelectorAll('.mode-tab').forEach(el => el.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('learnView').style.display = m === 'learn' ? '' : 'none';
+    document.getElementById('quizView').style.display = m === 'quiz' ? '' : 'none';
+    document.getElementById('scoreBar').style.display = m === 'quiz' ? '' : 'none';
+    if (m === 'learn') showRule(ruleIndex);
+    else nextQuestion();
+  }
+
+  // ── LEARN MODE ────────────────────────────────────────────────────────────────
+  function buildDots() {
+    const dots = document.getElementById('dots');
+    dots.innerHTML = '';
+    regeln.forEach((r, i) => {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === ruleIndex ? ' active' : '');
+      d.onclick = () => showRule(i);
+      dots.appendChild(d);
+    });
+  }
+
+  function showRule(i) {
+    ruleIndex = (i + regeln.length) % regeln.length;
+    const r = regeln[ruleIndex];
+    document.getElementById('ruleBadge').textContent = r.id;
+    document.getElementById('ruleIcon').textContent = r.icon;
+    document.getElementById('ruleTitle').textContent = r.title;
+    document.getElementById('ruleText').textContent = r.text;
+    document.getElementById('ruleExplain').style.display = 'none';
+    document.getElementById('ruleExplain').innerHTML = '<span class="rule-explain-label">Warum?</span>' + r.explain;
+    document.getElementById('flipHint').textContent = '👉 Tippen für: Warum ist das wichtig?';
+    buildDots();
+  }
+
+  function toggleExplain() {
+    const box = document.getElementById('ruleExplain');
+    const showing = box.style.display !== 'none';
+    box.style.display = showing ? 'none' : '';
+    document.getElementById('flipHint').textContent = showing ? '👉 Tippen für: Warum ist das wichtig?' : '👆 Tippen zum Verstecken';
+  }
+
+  function prevRule() { showRule(ruleIndex - 1); }
+  function nextRule() { showRule(ruleIndex + 1); }
+
+  // ── QUIZ MODE ─────────────────────────────────────────────────────────────────
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function nextQuestion() {
+    answered = false;
+    if (quizPool.length === 0) quizPool = shuffle(scenarios);
+    currentScenario = quizPool.pop();
+
+    document.getElementById('scenarioText').textContent = currentScenario.text;
+
+    const correctRule = regeln.find(r => r.id === currentScenario.ruleId);
+    const distractors = shuffle(regeln.filter(r => r.id !== currentScenario.ruleId)).slice(0, 3);
+    const choices = shuffle([correctRule, ...distractors]);
+
+    const optionsEl = document.getElementById('options');
+    optionsEl.innerHTML = '';
+    choices.forEach(rule => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.textContent = rule.icon + ' ' + rule.title;
+      btn.onclick = () => selectOption(btn, rule, correctRule);
+      optionsEl.appendChild(btn);
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.className = 'feedback hidden';
+    fb.textContent = '';
+    document.getElementById('explainBox').style.display = 'none';
+    document.getElementById('btnNext').style.display = 'none';
+  }
+
+  function selectOption(btn, chosenRule, correctRule) {
+    if (answered) return;
+    answered = true;
+
+    const allBtns = document.querySelectorAll('.option-btn');
+    allBtns.forEach(b => b.disabled = true);
+
+    const fb = document.getElementById('feedback');
+    const explainBox = document.getElementById('explainBox');
+
+    if (chosenRule.id === correctRule.id) {
+      btn.classList.add('correct');
+      score.correct++; score.streak++;
+      fb.textContent = score.streak >= 3 ? `🔥 Richtig! ${score.streak} in Folge!` : '⭐ Richtig!';
+      fb.className = 'feedback correct';
+    } else {
+      btn.classList.add('wrong');
+      allBtns.forEach(b => { if (b.textContent === correctRule.icon + ' ' + correctRule.title) b.classList.add('correct'); });
+      score.wrong++; score.streak = 0;
+      fb.textContent = '❌ Nicht ganz!';
+      fb.className = 'feedback wrong';
+    }
+
+    explainBox.innerHTML = '<span class="rule-explain-label">Regel ' + correctRule.id + ':</span> ' + correctRule.explain;
+    explainBox.style.display = 'block';
+
+    document.getElementById('scoreCorrect').textContent = score.correct;
+    document.getElementById('scoreWrong').textContent = score.wrong;
+    document.getElementById('streakDisplay').textContent = score.streak;
+    document.getElementById('btnNext').style.display = '';
+  }
+
+  // ── Keyboard ──────────────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && mode === 'quiz' && answered) nextQuestion();
+    if (mode === 'learn') {
+      if (e.key === 'ArrowLeft') prevRule();
+      if (e.key === 'ArrowRight') nextRule();
+    }
+  });
+
+  showRule(0);
+</script>
+</body>
+</html>
