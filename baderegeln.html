@@ -431,7 +431,7 @@
 
   function buildVoiceSelect(voices) {
     const sel = document.getElementById('ttsVoice');
-    sel.style.display = voices.length > 1 ? '' : 'none';
+    sel.style.display = voices.length > 0 ? '' : 'none';
     sel.innerHTML = '';
     voices.forEach(v => {
       const opt = document.createElement('option');
@@ -453,6 +453,18 @@
   if (ttsAvailable) {
     pickVoice();
     speechSynthesis.onvoiceschanged = pickVoice;
+    // iOS/Safari liefert die Stimmenliste oft erst verzögert und feuert
+    // onvoiceschanged nicht zuverlässig – deshalb zusätzlich nachfragen:
+    // alle 300 ms (bis zu 6 s) und bei der ersten Berührung der Seite.
+    let voiceTries = 0;
+    const voicePoll = setInterval(() => {
+      voiceTries++;
+      if (germanVoices().length > 0) { pickVoice(); clearInterval(voicePoll); }
+      else if (voiceTries >= 20) clearInterval(voicePoll);
+    }, 300);
+    document.addEventListener('pointerdown', () => {
+      if (!germanVoice) pickVoice();
+    }, { once: true });
   }
 
   function stripEmoji(text) {
