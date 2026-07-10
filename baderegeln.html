@@ -80,6 +80,16 @@
   }
   .voice-hint b { color: var(--text); }
   body.no-tts .voice-hint { display: none !important; }
+  .voice-diag-toggle {
+    display: inline-block; margin-top: 8px; color: var(--blue);
+    font-size: 0.75rem; font-weight: 700; cursor: pointer; text-decoration: underline;
+  }
+  .voice-diag-list {
+    margin-top: 8px; padding: 8px 10px; background: #0e2a3d; border-radius: 10px;
+    font-size: 0.72rem; color: var(--muted); line-height: 1.6; display: none;
+    max-height: 180px; overflow-y: auto; word-break: break-word;
+  }
+  .voice-diag-list b { color: var(--green); }
   .speak-btn {
     position: absolute; top: 12px; right: 12px;
     width: 42px; height: 42px; border-radius: 50%;
@@ -488,8 +498,34 @@
     } else {
       text = '<b>Tipp – mehr Stimmen:</b> Installiere in den Systemeinstellungen weitere deutsche Stimmen (Sprachausgabe / Text-in-Sprache) und lade die Seite danach neu.';
     }
-    hint.innerHTML = text;
+    hint.innerHTML = text +
+      '<span class="voice-diag-toggle" onclick="toggleVoiceDiag()">🔍 Welche Stimmen erkennt die App?</span>' +
+      '<div class="voice-diag-list" id="voiceDiagList"></div>';
     hint.style.display = '';
+  }
+
+  function toggleVoiceDiag() {
+    const box = document.getElementById('voiceDiagList');
+    if (!box) return;
+    const showing = box.style.display === 'block';
+    if (showing) { box.style.display = 'none'; return; }
+    const all = speechSynthesis.getVoices();
+    const de = all.filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
+    let html = 'Der Browser meldet <b>' + all.length + '</b> Stimme(n) insgesamt, davon <b>' + de.length + '</b> deutsche.';
+    if (de.length > 0) {
+      html += '<br>Deutsche Stimmen:<br>' + de.map(v => '• ' + v.name + ' (' + v.lang + ')').join('<br>');
+    }
+    if (all.length > de.length) {
+      const other = all.filter(v => !(v.lang && v.lang.toLowerCase().startsWith('de')));
+      html += '<br><br>Andere Sprachen:<br>' + other.map(v => '• ' + v.name + ' (' + v.lang + ')').join('<br>');
+    }
+    if (all.length === 0) {
+      html += '<br><br>⚠️ Der Browser liefert der App aktuell gar keine Stimmen. Meist hilft: Seite neu laden oder Safari komplett schließen und neu öffnen.';
+    } else if (de.length <= 1) {
+      html += '<br><br>ℹ️ Dein Gerät gibt der Web-App nur diese deutsche(n) Stimme(n) frei. Weitere in den Einstellungen geladene Stimmen erscheinen leider nicht immer – das ist eine Einschränkung von iOS/Safari, keine der App.';
+    }
+    box.innerHTML = html;
+    box.style.display = 'block';
   }
 
   function chooseVoice(indexStr) {
