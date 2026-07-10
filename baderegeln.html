@@ -73,6 +73,13 @@
     cursor: pointer; font-family: inherit;
   }
   body.no-tts .tts-row { display: none; }
+  .voice-hint {
+    max-width: 460px; margin: -4px auto 12px; padding: 10px 14px;
+    background: var(--card); border-radius: 14px; border-left: 4px solid var(--accent);
+    font-size: 0.78rem; color: var(--muted); line-height: 1.5; text-align: left;
+  }
+  .voice-hint b { color: var(--text); }
+  body.no-tts .voice-hint { display: none !important; }
   .speak-btn {
     position: absolute; top: 12px; right: 12px;
     width: 42px; height: 42px; border-radius: 50%;
@@ -232,6 +239,7 @@
   <button class="tts-toggle" id="ttsToggle" onclick="toggleTTS()">🔊 Vorlesen: AN</button>
   <select class="tts-voice" id="ttsVoice" onchange="chooseVoice(this.value)" title="Stimme auswählen" style="display:none"></select>
 </div>
+<div class="voice-hint" id="voiceHint" style="display:none"></div>
 
 <div class="mode-tabs">
   <button class="mode-tab active" id="tab-learn" onclick="setMode('learn')">📖 Lernen</button>
@@ -440,6 +448,27 @@
       sel.appendChild(opt);
     });
     if (germanVoice) sel.value = germanVoice.name;
+    updateVoiceHint(voices);
+  }
+
+  // Bei nur einer (oder keiner) deutschen Stimme: erklären, wie man mehr bekommt.
+  let voiceSearchDone = false;
+  function updateVoiceHint(voices) {
+    const hint = document.getElementById('voiceHint');
+    if (voices.length > 1 || (voices.length === 0 && !voiceSearchDone)) { hint.style.display = 'none'; return; }
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+    const isAndroid = /Android/.test(ua);
+    let text;
+    if (isIOS) {
+      text = '<b>Tipp – mehr Stimmen:</b> Auf dem iPhone/iPad unter <b>Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Deutsch</b> weitere Stimmen kostenlos laden (z.B. „Anna (Premium)“, „Helma“ oder „Martin“). Danach diese Seite neu laden – die Stimmen erscheinen dann hier zur Auswahl.';
+    } else if (isAndroid) {
+      text = '<b>Tipp – mehr Stimmen:</b> In den Android-Einstellungen unter <b>System → Sprachausgabe (Text-in-Sprache)</b> die Google-Sprachdienste wählen und deutsche Stimmen laden. Danach diese Seite neu laden.';
+    } else {
+      text = '<b>Tipp – mehr Stimmen:</b> Installiere in den Systemeinstellungen weitere deutsche Stimmen (Sprachausgabe / Text-in-Sprache) und lade die Seite danach neu.';
+    }
+    hint.innerHTML = text;
+    hint.style.display = '';
   }
 
   function chooseVoice(name) {
@@ -459,8 +488,8 @@
     let voiceTries = 0;
     const voicePoll = setInterval(() => {
       voiceTries++;
-      if (germanVoices().length > 0) { pickVoice(); clearInterval(voicePoll); }
-      else if (voiceTries >= 20) clearInterval(voicePoll);
+      if (germanVoices().length > 0) { voiceSearchDone = true; pickVoice(); clearInterval(voicePoll); }
+      else if (voiceTries >= 20) { voiceSearchDone = true; clearInterval(voicePoll); pickVoice(); }
     }, 300);
     document.addEventListener('pointerdown', () => {
       if (!germanVoice) pickVoice();
