@@ -58,13 +58,21 @@
   }
 
   /* ── VORLESEN (TTS) ── */
+  .tts-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; align-items: center; }
   .tts-toggle {
-    padding: 8px 16px; border-radius: 50px; margin-bottom: 12px;
+    padding: 8px 16px; border-radius: 50px;
     border: 2px solid #2a5470; background: var(--card);
     color: var(--muted); font-size: 0.85rem; font-weight: 700;
     cursor: pointer; transition: all 0.2s;
   }
   .tts-toggle.on { border-color: var(--green); color: var(--green); }
+  .tts-voice {
+    padding: 8px 12px; border-radius: 50px; max-width: 200px;
+    border: 2px solid #2a5470; background: var(--card);
+    color: var(--muted); font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  body.no-tts .tts-row { display: none; }
   .speak-btn {
     position: absolute; top: 12px; right: 12px;
     width: 42px; height: 42px; border-radius: 50%;
@@ -220,7 +228,10 @@
 <h1>🏊 Baderegeln Lernen</h1>
 <p class="subtitle">Die DLRG-Baderegeln für dein Schwimmabzeichen</p>
 
-<button class="tts-toggle" id="ttsToggle" onclick="toggleTTS()">🔊 Vorlesen: AN</button>
+<div class="tts-row">
+  <button class="tts-toggle" id="ttsToggle" onclick="toggleTTS()">🔊 Vorlesen: AN</button>
+  <select class="tts-voice" id="ttsVoice" onchange="chooseVoice(this.value)" title="Stimme auswählen" style="display:none"></select>
+</div>
 
 <div class="mode-tabs">
   <button class="mode-tab active" id="tab-learn" onclick="setMode('learn')">📖 Lernen</button>
@@ -388,11 +399,57 @@
 
   if (!ttsAvailable) document.body.classList.add('no-tts');
 
-  function pickVoice() {
-    const voices = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
-    // Bevorzugt natürlichere Stimmen (Google/Microsoft), sonst erste deutsche Stimme
-    germanVoice = voices.find(v => /google|microsoft|anna|petra/i.test(v.name)) || voices[0] || null;
+  const TTS_VOICE_KEY = 'baderegeln-tts-voice';
+
+  function germanVoices() {
+    return speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
   }
+
+  // Natürlich klingende Stimmen zuerst (Neural/Online > Google > bekannte gute Systemstimmen)
+  function voiceRank(v) {
+    const n = v.name.toLowerCase();
+    if (/natural|neural|online|premium|enhanced/.test(n)) return 0;
+    if (/google/.test(n)) return 1;
+    if (/anna|helena|katja|conrad|amala|christoph|petra|markus|viktoria/.test(n)) return 2;
+    if (!v.localService) return 3;
+    return 4;
+  }
+
+  function voiceLabel(v) {
+    return v.name
+      .replace(/Microsoft |Google |Apple |Desktop|Mobile/g, '')
+      .replace(/[-–] German \(Germany\)|\((Deutschland|Germany|Natural|Online)\)|de[-_]DE/gi, '')
+      .replace(/\s+/g, ' ').trim() || v.name;
+  }
+
+  function pickVoice() {
+    const voices = germanVoices().sort((a, b) => voiceRank(a) - voiceRank(b));
+    const savedName = localStorage.getItem(TTS_VOICE_KEY);
+    germanVoice = voices.find(v => v.name === savedName) || voices[0] || null;
+    buildVoiceSelect(voices);
+  }
+
+  function buildVoiceSelect(voices) {
+    const sel = document.getElementById('ttsVoice');
+    sel.style.display = voices.length > 1 ? '' : 'none';
+    sel.innerHTML = '';
+    voices.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = '🗣️ ' + voiceLabel(v);
+      sel.appendChild(opt);
+    });
+    if (germanVoice) sel.value = germanVoice.name;
+  }
+
+  function chooseVoice(name) {
+    const v = germanVoices().find(v => v.name === name);
+    if (!v) return;
+    germanVoice = v;
+    localStorage.setItem(TTS_VOICE_KEY, name);
+    speak('Hallo! So klinge ich. Gehe nur zum Baden, wenn du dich wohlfühlst.');
+  }
+
   if (ttsAvailable) {
     pickVoice();
     speechSynthesis.onvoiceschanged = pickVoice;
