@@ -415,13 +415,17 @@
 
   // Natürlich klingende Stimmen zuerst (Neural/Online > Google > bekannte gute Systemstimmen)
   function voiceRank(v) {
-    const n = v.name.toLowerCase();
+    const n = (v.name + ' ' + (v.voiceURI || '')).toLowerCase();
     if (/natural|neural|online|premium|enhanced/.test(n)) return 0;
     if (/google/.test(n)) return 1;
-    if (/anna|helena|katja|conrad|amala|christoph|petra|markus|viktoria/.test(n)) return 2;
+    if (/anna|helena|katja|conrad|amala|christoph|petra|markus|viktoria|helma|martin/.test(n)) return 2;
     if (!v.localService) return 3;
     return 4;
   }
+
+  // iOS meldet z.B. "Anna" (Standard) und "Anna" (Premium) unter gleichem Namen –
+  // nur die voiceURI unterscheidet sie zuverlässig.
+  function voiceKey(v) { return v.voiceURI || (v.name + '|' + v.lang); }
 
   function voiceLabel(v) {
     return v.name
@@ -430,24 +434,41 @@
       .replace(/\s+/g, ' ').trim() || v.name;
   }
 
+  let voiceList = [];
+
   function pickVoice() {
     const voices = germanVoices().sort((a, b) => voiceRank(a) - voiceRank(b));
-    const savedName = localStorage.getItem(TTS_VOICE_KEY);
-    germanVoice = voices.find(v => v.name === savedName) || voices[0] || null;
+    const saved = localStorage.getItem(TTS_VOICE_KEY);
+    // Erst über die eindeutige voiceURI suchen, dann (ältere gespeicherte Werte) über den Namen
+    germanVoice = voices.find(v => voiceKey(v) === saved) || voices.find(v => v.name === saved) || voices[0] || null;
     buildVoiceSelect(voices);
   }
 
   function buildVoiceSelect(voices) {
+    voiceList = voices;
     const sel = document.getElementById('ttsVoice');
     sel.style.display = voices.length > 0 ? '' : 'none';
     sel.innerHTML = '';
-    voices.forEach(v => {
+    const labelCount = {};
+    voices.forEach(v => { const l = voiceLabel(v); labelCount[l] = (labelCount[l] || 0) + 1; });
+    voices.forEach((v, i) => {
+      let label = voiceLabel(v);
+      if (labelCount[label] > 1) {
+        const uri = (v.voiceURI || '').toLowerCase();
+        if (/premium/.test(uri)) label += ' (Premium)';
+        else if (/enhanced/.test(uri)) label += ' (Verbessert)';
+        else if (/compact/.test(uri)) label += ' (Standard)';
+        else label += ' (' + (i + 1) + ')';
+      }
       const opt = document.createElement('option');
-      opt.value = v.name;
-      opt.textContent = '🗣️ ' + voiceLabel(v);
+      opt.value = String(i);
+      opt.textContent = '🗣️ ' + label;
       sel.appendChild(opt);
     });
-    if (germanVoice) sel.value = germanVoice.name;
+    if (germanVoice) {
+      const idx = voices.indexOf(germanVoice);
+      if (idx >= 0) sel.value = String(idx);
+    }
     updateVoiceHint(voices);
   }
 
@@ -461,7 +482,7 @@
     const isAndroid = /Android/.test(ua);
     let text;
     if (isIOS) {
-      text = '<b>Tipp – mehr Stimmen:</b> Auf dem iPhone/iPad unter <b>Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Deutsch</b> weitere Stimmen kostenlos laden (z.B. „Anna (Premium)“, „Helma“ oder „Martin“). Danach diese Seite neu laden – die Stimmen erscheinen dann hier zur Auswahl.';
+      text = '<b>Tipp – mehr Stimmen:</b> Auf dem iPhone/iPad unter <b>Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Deutsch</b> weitere Stimmen kostenlos laden (z.B. „Anna (Premium)“, „Helma“ oder „Martin“). <b>Wichtig:</b> Danach Safari einmal komplett schließen (App-Übersicht öffnen und Safari nach oben wegwischen) und die Seite neu öffnen – erst dann erscheinen die neuen Stimmen hier.';
     } else if (isAndroid) {
       text = '<b>Tipp – mehr Stimmen:</b> In den Android-Einstellungen unter <b>System → Sprachausgabe (Text-in-Sprache)</b> die Google-Sprachdienste wählen und deutsche Stimmen laden. Danach diese Seite neu laden.';
     } else {
@@ -471,11 +492,11 @@
     hint.style.display = '';
   }
 
-  function chooseVoice(name) {
-    const v = germanVoices().find(v => v.name === name);
+  function chooseVoice(indexStr) {
+    const v = voiceList[Number(indexStr)];
     if (!v) return;
     germanVoice = v;
-    localStorage.setItem(TTS_VOICE_KEY, name);
+    localStorage.setItem(TTS_VOICE_KEY, voiceKey(v));
     speak('Hallo! So klinge ich. Gehe nur zum Baden, wenn du dich wohlfühlst.');
   }
 
