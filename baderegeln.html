@@ -26,6 +26,7 @@
     flex-direction: column;
     align-items: center;
     padding: 16px;
+    overflow-x: hidden;
   }
   h1 { font-size: 1.7rem; font-weight: 900; color: var(--accent); text-align: center; margin-bottom: 4px; }
   .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; text-align: center; }
@@ -40,11 +41,11 @@
   .score-correct { color: var(--green); }
   .score-wrong { color: var(--red); }
 
-  .mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; }
   .mode-tab {
-    padding: 10px 18px; border-radius: 50px;
+    padding: 10px 16px; border-radius: 50px;
     border: 2px solid var(--card); background: var(--card);
-    color: var(--muted); font-size: 0.9rem; font-weight: 700;
+    color: var(--muted); font-size: 0.88rem; font-weight: 700;
     cursor: pointer; transition: all 0.2s;
   }
   .mode-tab.active { border-color: var(--accent); color: var(--accent); background: #274a63; }
@@ -65,6 +66,7 @@
   .rule-icon { font-size: 3.2rem; text-align: center; }
   .rule-title { font-size: 1.15rem; font-weight: 800; text-align: center; color: var(--text); }
   .rule-text { font-size: 1rem; text-align: center; color: var(--text); line-height: 1.4; }
+  .rule-stars { font-size: 1rem; letter-spacing: 2px; }
   .rule-explain {
     background: #0e2a3d; border-radius: 14px; padding: 14px;
     font-size: 0.9rem; color: var(--muted); line-height: 1.5;
@@ -73,7 +75,7 @@
   .rule-explain-label { color: var(--blue); font-weight: 700; margin-right: 4px; }
   .flip-hint { font-size: 0.75rem; color: var(--muted); text-align: center; cursor: pointer; }
 
-  .nav-row { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; max-width: 460px; }
+  .nav-row { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; max-width: 460px; margin-top: 14px; }
   .nav-btn {
     width: 44px; height: 44px; border-radius: 50%; border: none;
     background: var(--card); color: var(--accent); font-size: 1.3rem;
@@ -83,8 +85,12 @@
   .dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--card); border: 2px solid #2a5470; cursor: pointer; }
   .dot.active { background: var(--accent); border-color: var(--accent); }
+  .dot.mastered { background: var(--green); border-color: var(--green); }
 
-  /* ── QUIZ MODE ── */
+  .progress-line { font-size: 0.8rem; color: var(--muted); margin-top: 10px; text-align: center; }
+  .progress-line b { color: var(--green); }
+
+  /* ── QUIZ / EXAM MODE ── */
   .quiz-label { font-size: 0.8rem; color: var(--blue); font-weight: 700; text-align: center; letter-spacing: .04em; }
   .scenario-text { font-size: 1.05rem; text-align: center; line-height: 1.5; }
   .options { display: flex; flex-direction: column; gap: 10px; width: 100%; }
@@ -120,20 +126,81 @@
   }
   .btn-next { background: var(--blue); color: #0e2a3d; }
   .btn-next:hover { filter: brightness(1.1); transform: scale(1.02); }
+  .btn-gold { background: var(--accent); color: #12283a; }
+  .btn-gold:hover { filter: brightness(1.1); transform: scale(1.02); }
+
+  /* ── MEMORY MODE ── */
+  .memory-stats { display: flex; gap: 18px; font-size: 0.9rem; color: var(--muted); font-weight: 700; }
+  .memory-stats b { color: var(--accent); }
+  .memory-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px; width: 100%; max-width: 460px;
+  }
+  .mem-card {
+    aspect-ratio: 3 / 3.4; border-radius: 12px; border: 2px solid #2a5470;
+    background: #0e2a3d; cursor: pointer; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px; transition: transform 0.15s, border-color 0.15s;
+    font-family: inherit;
+  }
+  .mem-card:hover { border-color: var(--blue); }
+  .mem-card .back { font-size: 1.5rem; }
+  .mem-card .front { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+  .mem-card.open .back, .mem-card.done .back { display: none; }
+  .mem-card.open .front, .mem-card.done .front { display: flex; }
+  .mem-card.open { border-color: var(--accent); background: #274a63; }
+  .mem-card.done { border-color: var(--green); background: #0c3a34; cursor: default; }
+  .mem-card.shake { animation: shake 0.35s; }
+  .mem-icon { font-size: 1.7rem; line-height: 1; }
+  .mem-word { font-size: 0.58rem; font-weight: 700; text-align: center; line-height: 1.2; color: var(--text); }
+  .mem-card.done .mem-word { color: var(--green); }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  /* ── EXAM MODE ── */
+  .exam-progress { width: 100%; max-width: 460px; margin-bottom: 12px; }
+  .exam-progress-track { height: 10px; background: var(--card); border-radius: 6px; overflow: hidden; }
+  .exam-progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--green)); border-radius: 6px; transition: width 0.4s; }
+  .exam-progress-label { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 5px; font-weight: 700; }
+  .exam-start-icon { font-size: 3.6rem; }
+  .exam-result-medal { font-size: 4.2rem; animation: pop 0.5s; }
+  @keyframes pop {
+    0% { transform: scale(0); }
+    70% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+  .exam-result-title { font-size: 1.4rem; font-weight: 900; color: var(--accent); text-align: center; }
+  .exam-result-text { font-size: 1rem; text-align: center; color: var(--text); line-height: 1.5; }
+  .exam-best { font-size: 0.82rem; color: var(--muted); text-align: center; }
+
+  /* ── CONFETTI ── */
+  .confetti-piece {
+    position: fixed; top: -30px; font-size: 1.4rem; z-index: 999;
+    pointer-events: none; animation: fall linear forwards;
+  }
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(720deg); }
+  }
 
   @media (max-width: 360px) {
     .rule-icon { font-size: 2.6rem; }
+    .mem-word { font-size: 0.52rem; }
   }
 </style>
 </head>
 <body>
 
 <h1>🏊 Baderegeln Lernen</h1>
-<p class="subtitle">Für dein Schwimmabzeichen</p>
+<p class="subtitle">Die DLRG-Baderegeln für dein Schwimmabzeichen</p>
 
 <div class="mode-tabs">
-  <button class="mode-tab active" onclick="setMode('learn',this)">📖 Lernen</button>
-  <button class="mode-tab" onclick="setMode('quiz',this)">🎯 Quiz</button>
+  <button class="mode-tab active" id="tab-learn" onclick="setMode('learn')">📖 Lernen</button>
+  <button class="mode-tab" id="tab-quiz" onclick="setMode('quiz')">🎯 Quiz</button>
+  <button class="mode-tab" id="tab-memory" onclick="setMode('memory')">🧠 Memory</button>
+  <button class="mode-tab" id="tab-exam" onclick="setMode('exam')">🏅 Prüfung</button>
 </div>
 
 <!-- SCORE BAR (quiz mode only) -->
@@ -144,25 +211,26 @@
 </div>
 
 <!-- LEARN MODE -->
-<div id="learnView">
+<div id="learnView" style="width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;">
   <div class="card">
     <div class="rule-badge" id="ruleBadge">1</div>
     <div class="rule-icon" id="ruleIcon"></div>
     <div class="rule-title" id="ruleTitle"></div>
     <div class="rule-text" id="ruleText"></div>
+    <div class="rule-stars" id="ruleStars" title="Sterne sammelst du im Quiz"></div>
     <div class="flip-hint" id="flipHint" onclick="toggleExplain()">👉 Tippen für: Warum ist das wichtig?</div>
     <div class="rule-explain" id="ruleExplain" style="display:none"></div>
   </div>
-  <br>
   <div class="nav-row">
     <button class="nav-btn" onclick="prevRule()">◀</button>
     <div class="dots" id="dots"></div>
     <button class="nav-btn" onclick="nextRule()">▶</button>
   </div>
+  <div class="progress-line" id="progressLine"></div>
 </div>
 
 <!-- QUIZ MODE -->
-<div id="quizView" style="display:none">
+<div id="quizView" style="display:none;width:100%;max-width:460px;">
   <div class="card">
     <div class="quiz-label">Was ist hier los?</div>
     <div class="scenario-text" id="scenarioText"></div>
@@ -173,19 +241,65 @@
   </div>
 </div>
 
+<!-- MEMORY MODE -->
+<div id="memoryView" style="display:none;width:100%;max-width:460px;flex-direction:column;align-items:center;gap:12px;">
+  <div class="memory-stats">
+    <div>🃏 Züge: <b id="memMoves">0</b></div>
+    <div>✅ Paare: <b id="memPairs">0</b>/10</div>
+  </div>
+  <div class="memory-grid" id="memoryGrid"></div>
+  <div class="feedback hidden" id="memFeedback" style="min-height:2rem;"></div>
+  <button class="btn btn-next" onclick="startMemory()">🔄 Neu mischen</button>
+</div>
+
+<!-- EXAM MODE -->
+<div id="examView" style="display:none;width:100%;max-width:460px;flex-direction:column;align-items:center;">
+  <div class="exam-progress" id="examProgress" style="display:none">
+    <div class="exam-progress-track"><div class="exam-progress-fill" id="examProgressFill"></div></div>
+    <div class="exam-progress-label" id="examProgressLabel"></div>
+  </div>
+
+  <!-- Startscreen -->
+  <div class="card" id="examStart">
+    <div class="exam-start-icon">🏅</div>
+    <div class="exam-result-title">Baderegel-Prüfung</div>
+    <div class="exam-result-text">10 Fragen – eine zu jeder Baderegel.<br>Schaffst du die Goldmedaille?</div>
+    <div class="exam-best" id="examBest"></div>
+    <button class="btn btn-gold" onclick="startExam()">Prüfung starten!</button>
+  </div>
+
+  <!-- Frage -->
+  <div class="card" id="examQuestion" style="display:none">
+    <div class="quiz-label" id="examQLabel"></div>
+    <div class="scenario-text" id="examScenarioText"></div>
+    <div class="options" id="examOptions"></div>
+    <div class="feedback hidden" id="examFeedback"></div>
+    <button class="btn btn-next" id="examBtnNext" onclick="nextExamQuestion()" style="display:none">Weiter →</button>
+  </div>
+
+  <!-- Ergebnis -->
+  <div class="card" id="examResult" style="display:none">
+    <div class="exam-result-medal" id="examMedal"></div>
+    <div class="exam-result-title" id="examResultTitle"></div>
+    <div class="exam-result-text" id="examResultText"></div>
+    <div class="exam-best" id="examBestResult"></div>
+    <button class="btn btn-gold" onclick="startExam()">Nochmal versuchen</button>
+  </div>
+</div>
+
 <script>
   // ── Data: die 10 Baderegeln der DLRG ────────────────────────────────────────
   const regeln = [
-    { id: 1, icon: '😊', title: 'Nur baden, wenn du dich wohlfühlst', text: 'Gehe nur zum Baden, wenn du dich wohlfühlst.', explain: 'Wenn du krank bist oder dich schlapp fühlst, ist dein Körper schwächer. Dann ist Schwimmen gefährlicher als sonst.' },
-    { id: 2, icon: '🚿', title: 'Vorher abkühlen und duschen', text: 'Kühle dich ab und dusche, bevor du ins Wasser gehst.', explain: 'Bist du erhitzt (z.B. von der Sonne) und springst plötzlich ins kalte Wasser, kann das einen Kälteschock und Kreislaufprobleme geben.' },
-    { id: 3, icon: '🍽️', title: 'Nicht mit vollem oder leerem Magen', text: 'Gehe niemals mit vollem oder ganz leerem Magen ins Wasser.', explain: 'Mit vollem Bauch kann dir beim Schwimmen schlecht werden (Seitenstechen). Mit leerem Magen fehlt dir die Energie und dir kann schwindelig werden.' },
-    { id: 4, icon: '🚶', title: 'Nichtschwimmer nur bis zum Bauch', text: 'Gehe als Nichtschwimmer nur bis zum Bauch ins Wasser.', explain: 'Wer noch nicht schwimmen kann, darf nicht ins tiefe Wasser gehen – dort verliert man schnell den Boden unter den Füßen.' },
-    { id: 5, icon: '📢', title: 'Nur um Hilfe rufen, wenn es ernst ist', text: 'Rufe nie um Hilfe, wenn du nicht wirklich in Gefahr bist – aber hilf anderen, wenn sie Hilfe brauchen.', explain: 'Falscher Alarm ist gefährlich: Wenn du aus Spaß "Hilfe!" rufst, könnte niemand mehr rechtzeitig kommen, wenn wirklich jemand in Not ist.' },
-    { id: 6, icon: '💪', title: 'Überschätze dich nicht', text: 'Überschätze dich und deine Kraft nicht.', explain: 'Auch gute Schwimmer werden müde. Schwimm nicht zu weit raus oder gegen starke Strömung, wenn du nicht sicher zurückkommst.' },
-    { id: 7, icon: '🚤', title: 'Nicht baden, wo Boote fahren', text: 'Bade nicht dort, wo Schiffe und Boote fahren.', explain: 'Boote können dich im Wasser schlecht sehen. Du könntest angefahren oder von der Schiffsschraube verletzt werden.' },
-    { id: 8, icon: '⛈️', title: 'Bei Gewitter raus aus dem Wasser', text: 'Bei Gewitter ist Baden lebensgefährlich – verlasse sofort das Wasser und suche ein festes Gebäude auf.', explain: 'Wasser leitet Strom sehr gut. Ein Blitz, der ins Wasser einschlägt, ist für alle Schwimmenden lebensgefährlich.' },
-    { id: 9, icon: '🗑️', title: 'Wasser und Umgebung sauber halten', text: 'Halte das Wasser und seine Umgebung sauber, wirf Abfälle in den Mülleimer.', explain: 'Müll im Wasser ist nicht nur eklig, sondern kann auch Tiere verletzen und andere Badegäste gefährden.' },
-    { id: 10, icon: '🤿', title: 'Nur ins freie, tiefe Wasser springen', text: 'Springe nur ins Wasser, wenn es frei und tief genug ist.', explain: 'Springst du in zu flaches Wasser oder auf jemanden drauf, kann das schwere Verletzungen verursachen. Erst schauen, dann springen!' },
+    { id: 1, icon: '😊', short: 'Wohlfühlen', title: 'Nur baden, wenn du dich wohlfühlst', text: 'Gehe nur zum Baden, wenn du dich wohlfühlst.', explain: 'Wenn du krank bist oder dich schlapp fühlst, ist dein Körper schwächer. Dann ist Schwimmen gefährlicher als sonst.' },
+    { id: 2, icon: '🚿', short: 'Abkühlen & duschen', title: 'Vorher abkühlen und duschen', text: 'Kühle dich ab und dusche, bevor du ins Wasser gehst.', explain: 'Bist du erhitzt (z.B. von der Sonne) und springst plötzlich ins kalte Wasser, kann das einen Kälteschock und Kreislaufprobleme geben.' },
+    { id: 3, icon: '🍽️', short: 'Nicht voller/leerer Magen', title: 'Nicht mit vollem oder leerem Magen', text: 'Gehe niemals mit vollem oder ganz leerem Magen ins Wasser.', explain: 'Mit vollem Bauch kann dir beim Schwimmen schlecht werden (Seitenstechen). Mit leerem Magen fehlt dir die Energie und dir kann schwindelig werden.' },
+    { id: 4, icon: '🚶', short: 'Nur bis zum Bauch', title: 'Nichtschwimmer nur bis zum Bauch', text: 'Gehe als Nichtschwimmer nur bis zum Bauch ins Wasser.', explain: 'Wer noch nicht schwimmen kann, darf nicht ins tiefe Wasser gehen – dort verliert man schnell den Boden unter den Füßen.' },
+    { id: 5, icon: '📢', short: 'Hilfe rufen & helfen', title: 'Nur um Hilfe rufen, wenn es ernst ist', text: 'Rufe nie um Hilfe, wenn du nicht wirklich in Gefahr bist – aber hilf anderen, wenn sie Hilfe brauchen.', explain: 'Falscher Alarm ist gefährlich: Wenn du aus Spaß "Hilfe!" rufst, könnte niemand mehr rechtzeitig kommen, wenn wirklich jemand in Not ist.' },
+    { id: 6, icon: '💪', short: 'Nicht überschätzen', title: 'Überschätze dich nicht', text: 'Überschätze dich und deine Kraft nicht.', explain: 'Auch gute Schwimmer werden müde. Schwimm nicht zu weit raus oder gegen starke Strömung, wenn du nicht sicher zurückkommst.' },
+    { id: 7, icon: '🚤', short: 'Keine Boote', title: 'Nicht baden, wo Boote fahren', text: 'Bade nicht dort, wo Schiffe und Boote fahren.', explain: 'Boote können dich im Wasser schlecht sehen. Du könntest angefahren oder von der Schiffsschraube verletzt werden.' },
+    { id: 8, icon: '⛈️', short: 'Gewitter = raus!', title: 'Bei Gewitter raus aus dem Wasser', text: 'Bei Gewitter ist Baden lebensgefährlich – verlasse sofort das Wasser und suche ein festes Gebäude auf.', explain: 'Wasser leitet Strom sehr gut. Ein Blitz, der ins Wasser einschlägt, ist für alle Schwimmenden lebensgefährlich.' },
+    { id: 9, icon: '🗑️', short: 'Sauber halten', title: 'Wasser und Umgebung sauber halten', text: 'Halte das Wasser und seine Umgebung sauber, wirf Abfälle in den Mülleimer.', explain: 'Müll im Wasser ist nicht nur eklig, sondern kann auch Tiere verletzen und andere Badegäste gefährden.' },
+    { id: 10, icon: '🤿', short: 'Erst schauen, dann springen', title: 'Nur ins freie, tiefe Wasser springen', text: 'Springe nur ins Wasser, wenn es frei und tief genug ist.', explain: 'Springst du in zu flaches Wasser oder auf jemanden drauf, kann das schwere Verletzungen verursachen. Erst schauen, dann springen!' },
   ];
 
   const scenarios = [
@@ -209,6 +323,7 @@
     { text: 'Es donnert in der Ferne. Du gehst sofort aus dem Wasser und suchst ein festes Gebäude auf.', ruleId: 8 },
     { text: 'Du springst erst vom Beckenrand, nachdem du geschaut hast, dass die Stelle frei und tief genug ist.', ruleId: 10 },
     { text: 'Ein Freund tut nur so, als würde er ertrinken, um dich zu erschrecken, und schreit "Hilfe!".', ruleId: 5 },
+    { text: 'Du bist schon eine Stunde im kalten See und zitterst – trotzdem willst du noch weiter rausschwimmen.', ruleId: 6 },
   ];
 
   let mode = 'learn';
@@ -218,16 +333,38 @@
   let currentScenario = null;
   let answered = false;
 
+  // ── Fortschritt speichern ─────────────────────────────────────────────────────
+  const STORAGE_KEY = 'baderegeln-progress';
+  let progress = { stars: {}, bestExam: -1 };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && typeof saved === 'object') progress = Object.assign(progress, saved);
+  } catch (e) { /* frischer Start */ }
+
+  function saveProgress() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) {}
+  }
+  function starsFor(id) { return Math.min(progress.stars[id] || 0, 3); }
+  function isMastered(id) { return starsFor(id) >= 3; }
+  function addStar(id) {
+    progress.stars[id] = Math.min((progress.stars[id] || 0) + 1, 3);
+    saveProgress();
+  }
+
   // ── Mode switching ────────────────────────────────────────────────────────────
-  function setMode(m, btn) {
+  function setMode(m) {
     mode = m;
     document.querySelectorAll('.mode-tab').forEach(el => el.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('learnView').style.display = m === 'learn' ? '' : 'none';
+    document.getElementById('tab-' + m).classList.add('active');
+    document.getElementById('learnView').style.display = m === 'learn' ? 'flex' : 'none';
     document.getElementById('quizView').style.display = m === 'quiz' ? '' : 'none';
+    document.getElementById('memoryView').style.display = m === 'memory' ? 'flex' : 'none';
+    document.getElementById('examView').style.display = m === 'exam' ? 'flex' : 'none';
     document.getElementById('scoreBar').style.display = m === 'quiz' ? '' : 'none';
     if (m === 'learn') showRule(ruleIndex);
-    else nextQuestion();
+    else if (m === 'quiz') nextQuestion();
+    else if (m === 'memory') { if (!memoryStarted) startMemory(); }
+    else if (m === 'exam') showExamStart();
   }
 
   // ── LEARN MODE ────────────────────────────────────────────────────────────────
@@ -236,7 +373,7 @@
     dots.innerHTML = '';
     regeln.forEach((r, i) => {
       const d = document.createElement('div');
-      d.className = 'dot' + (i === ruleIndex ? ' active' : '');
+      d.className = 'dot' + (i === ruleIndex ? ' active' : isMastered(r.id) ? ' mastered' : '');
       d.onclick = () => showRule(i);
       dots.appendChild(d);
     });
@@ -249,10 +386,17 @@
     document.getElementById('ruleIcon').textContent = r.icon;
     document.getElementById('ruleTitle').textContent = r.title;
     document.getElementById('ruleText').textContent = r.text;
+    const s = starsFor(r.id);
+    document.getElementById('ruleStars').textContent = '⭐'.repeat(s) + '☆'.repeat(3 - s);
     document.getElementById('ruleExplain').style.display = 'none';
     document.getElementById('ruleExplain').innerHTML = '<span class="rule-explain-label">Warum?</span>' + r.explain;
     document.getElementById('flipHint').textContent = '👉 Tippen für: Warum ist das wichtig?';
     buildDots();
+    const mastered = regeln.filter(r => isMastered(r.id)).length;
+    document.getElementById('progressLine').innerHTML =
+      mastered === regeln.length
+        ? '🏆 <b>Alle 10 Regeln gemeistert – stark!</b>'
+        : 'Gemeistert: <b>' + mastered + '</b> von 10 Regeln · Sterne sammelst du im 🎯 Quiz';
   }
 
   function toggleExplain() {
@@ -275,26 +419,36 @@
     return a;
   }
 
+  function buildOptions(container, correctRule, onPick) {
+    const distractors = shuffle(regeln.filter(r => r.id !== correctRule.id)).slice(0, 3);
+    const choices = shuffle([correctRule, ...distractors]);
+    container.innerHTML = '';
+    choices.forEach(rule => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.textContent = rule.icon + ' ' + rule.title;
+      btn.dataset.ruleId = rule.id;
+      btn.onclick = () => onPick(btn, rule);
+      container.appendChild(btn);
+    });
+  }
+
+  function markOptions(container, chosenBtn, correctRule, isCorrect) {
+    container.querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.ruleId) === correctRule.id) b.classList.add('correct');
+    });
+    if (!isCorrect) chosenBtn.classList.add('wrong');
+  }
+
   function nextQuestion() {
     answered = false;
     if (quizPool.length === 0) quizPool = shuffle(scenarios);
     currentScenario = quizPool.pop();
 
     document.getElementById('scenarioText').textContent = currentScenario.text;
-
     const correctRule = regeln.find(r => r.id === currentScenario.ruleId);
-    const distractors = shuffle(regeln.filter(r => r.id !== currentScenario.ruleId)).slice(0, 3);
-    const choices = shuffle([correctRule, ...distractors]);
-
-    const optionsEl = document.getElementById('options');
-    optionsEl.innerHTML = '';
-    choices.forEach(rule => {
-      const btn = document.createElement('button');
-      btn.className = 'option-btn';
-      btn.textContent = rule.icon + ' ' + rule.title;
-      btn.onclick = () => selectOption(btn, rule, correctRule);
-      optionsEl.appendChild(btn);
-    });
+    buildOptions(document.getElementById('options'), correctRule, (btn, rule) => selectOption(btn, rule, correctRule));
 
     const fb = document.getElementById('feedback');
     fb.className = 'feedback hidden';
@@ -307,20 +461,21 @@
     if (answered) return;
     answered = true;
 
-    const allBtns = document.querySelectorAll('.option-btn');
-    allBtns.forEach(b => b.disabled = true);
-
     const fb = document.getElementById('feedback');
     const explainBox = document.getElementById('explainBox');
+    const isCorrect = chosenRule.id === correctRule.id;
+    markOptions(document.getElementById('options'), btn, correctRule, isCorrect);
 
-    if (chosenRule.id === correctRule.id) {
-      btn.classList.add('correct');
+    if (isCorrect) {
       score.correct++; score.streak++;
+      const starsBefore = starsFor(correctRule.id);
+      addStar(correctRule.id);
       fb.textContent = score.streak >= 3 ? `🔥 Richtig! ${score.streak} in Folge!` : '⭐ Richtig!';
       fb.className = 'feedback correct';
+      if (starsBefore < 3 && starsFor(correctRule.id) === 3) {
+        fb.textContent += ' Regel ' + correctRule.id + ' gemeistert! ⭐⭐⭐';
+      }
     } else {
-      btn.classList.add('wrong');
-      allBtns.forEach(b => { if (b.textContent === correctRule.icon + ' ' + correctRule.title) b.classList.add('correct'); });
       score.wrong++; score.streak = 0;
       fb.textContent = '❌ Nicht ganz!';
       fb.className = 'feedback wrong';
@@ -335,9 +490,203 @@
     document.getElementById('btnNext').style.display = '';
   }
 
+  // ── MEMORY MODE ───────────────────────────────────────────────────────────────
+  let memoryStarted = false;
+  let memOpen = [];       // aktuell offene Karten (max 2)
+  let memLock = false;
+  let memMoves = 0;
+  let memPairs = 0;
+
+  function startMemory() {
+    memoryStarted = true;
+    memOpen = []; memLock = false; memMoves = 0; memPairs = 0;
+    document.getElementById('memMoves').textContent = '0';
+    document.getElementById('memPairs').textContent = '0';
+    const fb = document.getElementById('memFeedback');
+    fb.className = 'feedback hidden'; fb.textContent = '';
+
+    const cards = [];
+    regeln.forEach(r => {
+      cards.push({ ruleId: r.id, kind: 'icon' });
+      cards.push({ ruleId: r.id, kind: 'word' });
+    });
+
+    const grid = document.getElementById('memoryGrid');
+    grid.innerHTML = '';
+    shuffle(cards).forEach(c => {
+      const r = regeln.find(x => x.id === c.ruleId);
+      const el = document.createElement('button');
+      el.className = 'mem-card';
+      el.dataset.ruleId = c.ruleId;
+      const front = c.kind === 'icon'
+        ? '<div class="front"><span class="mem-icon">' + r.icon + '</span></div>'
+        : '<div class="front"><span class="mem-word">' + r.short + '</span></div>';
+      el.innerHTML = '<span class="back">🌊</span>' + front;
+      el.onclick = () => flipCard(el);
+      grid.appendChild(el);
+    });
+  }
+
+  function flipCard(el) {
+    if (memLock || el.classList.contains('open') || el.classList.contains('done')) return;
+    el.classList.add('open');
+    memOpen.push(el);
+    if (memOpen.length < 2) return;
+
+    memMoves++;
+    document.getElementById('memMoves').textContent = memMoves;
+    const [a, b] = memOpen;
+    memOpen = [];
+
+    if (a.dataset.ruleId === b.dataset.ruleId) {
+      a.classList.remove('open'); b.classList.remove('open');
+      a.classList.add('done'); b.classList.add('done');
+      memPairs++;
+      document.getElementById('memPairs').textContent = memPairs;
+      if (memPairs === 10) {
+        const fb = document.getElementById('memFeedback');
+        fb.textContent = '🎉 Geschafft in ' + memMoves + ' Zügen!';
+        fb.className = 'feedback correct';
+        launchConfetti();
+      }
+    } else {
+      memLock = true;
+      a.classList.add('shake'); b.classList.add('shake');
+      setTimeout(() => {
+        a.classList.remove('open', 'shake');
+        b.classList.remove('open', 'shake');
+        memLock = false;
+      }, 750);
+    }
+  }
+
+  // ── EXAM MODE ─────────────────────────────────────────────────────────────────
+  let examQuestions = [];
+  let examIndex = 0;
+  let examCorrect = 0;
+  let examAnswered = false;
+
+  function bestExamLabel() {
+    if (progress.bestExam < 0) return '';
+    return 'Beste Prüfung bisher: ' + progress.bestExam + ' von 10 richtig';
+  }
+
+  function showExamStart() {
+    document.getElementById('examStart').style.display = '';
+    document.getElementById('examQuestion').style.display = 'none';
+    document.getElementById('examResult').style.display = 'none';
+    document.getElementById('examProgress').style.display = 'none';
+    document.getElementById('examBest').textContent = bestExamLabel();
+  }
+
+  function startExam() {
+    // eine zufällige Frage pro Regel, gemischte Reihenfolge
+    examQuestions = shuffle(regeln.map(r => {
+      const options = scenarios.filter(s => s.ruleId === r.id);
+      return options[Math.floor(Math.random() * options.length)];
+    }));
+    examIndex = 0;
+    examCorrect = 0;
+    document.getElementById('examStart').style.display = 'none';
+    document.getElementById('examResult').style.display = 'none';
+    document.getElementById('examQuestion').style.display = '';
+    document.getElementById('examProgress').style.display = '';
+    showExamQuestion();
+  }
+
+  function showExamQuestion() {
+    examAnswered = false;
+    const q = examQuestions[examIndex];
+    const correctRule = regeln.find(r => r.id === q.ruleId);
+
+    document.getElementById('examQLabel').textContent = 'Frage ' + (examIndex + 1) + ' von 10';
+    document.getElementById('examScenarioText').textContent = q.text;
+    buildOptions(document.getElementById('examOptions'), correctRule, (btn, rule) => selectExamOption(btn, rule, correctRule));
+
+    const fb = document.getElementById('examFeedback');
+    fb.className = 'feedback hidden'; fb.textContent = '';
+    document.getElementById('examBtnNext').style.display = 'none';
+
+    document.getElementById('examProgressFill').style.width = (examIndex / 10 * 100) + '%';
+    document.getElementById('examProgressLabel').textContent = 'Frage ' + (examIndex + 1) + ' / 10 · Richtig: ' + examCorrect;
+  }
+
+  function selectExamOption(btn, chosenRule, correctRule) {
+    if (examAnswered) return;
+    examAnswered = true;
+
+    const isCorrect = chosenRule.id === correctRule.id;
+    markOptions(document.getElementById('examOptions'), btn, correctRule, isCorrect);
+
+    const fb = document.getElementById('examFeedback');
+    if (isCorrect) {
+      examCorrect++;
+      fb.textContent = '⭐ Richtig!';
+      fb.className = 'feedback correct';
+    } else {
+      fb.textContent = '❌ Das war Regel ' + correctRule.id + '.';
+      fb.className = 'feedback wrong';
+    }
+
+    document.getElementById('examProgressFill').style.width = ((examIndex + 1) / 10 * 100) + '%';
+    document.getElementById('examProgressLabel').textContent = 'Frage ' + (examIndex + 1) + ' / 10 · Richtig: ' + examCorrect;
+    const nextBtn = document.getElementById('examBtnNext');
+    nextBtn.textContent = examIndex === 9 ? 'Ergebnis anzeigen 🏅' : 'Weiter →';
+    nextBtn.style.display = '';
+  }
+
+  function nextExamQuestion() {
+    examIndex++;
+    if (examIndex < 10) showExamQuestion();
+    else showExamResult();
+  }
+
+  function showExamResult() {
+    document.getElementById('examQuestion').style.display = 'none';
+    document.getElementById('examProgress').style.display = 'none';
+    document.getElementById('examResult').style.display = '';
+
+    let medal, title, text;
+    if (examCorrect === 10)     { medal = '🥇'; title = 'GOLD! Perfekt!'; text = 'Alle 10 Fragen richtig – du kennst die Baderegeln wie ein echter Rettungsschwimmer!'; }
+    else if (examCorrect >= 8)  { medal = '🥈'; title = 'Silber! Super stark!'; text = examCorrect + ' von 10 richtig. Nur noch ein kleines Stück bis Gold!'; }
+    else if (examCorrect >= 6)  { medal = '🥉'; title = 'Bronze! Gut gemacht!'; text = examCorrect + ' von 10 richtig. Übe noch ein bisschen im Quiz, dann klappt Silber!'; }
+    else                        { medal = '🐣'; title = 'Weiter üben!'; text = examCorrect + ' von 10 richtig. Schau dir die Regeln im 📖 Lernen-Modus nochmal an – du schaffst das!'; }
+
+    document.getElementById('examMedal').textContent = medal;
+    document.getElementById('examResultTitle').textContent = title;
+    document.getElementById('examResultText').textContent = text;
+
+    const isNewBest = examCorrect > progress.bestExam;
+    if (isNewBest) {
+      progress.bestExam = examCorrect;
+      saveProgress();
+    }
+    document.getElementById('examBestResult').textContent = (isNewBest && examCorrect > 0 ? '🎊 Neuer Rekord! ' : '') + bestExamLabel();
+
+    if (examCorrect >= 8) launchConfetti();
+  }
+
+  // ── CONFETTI ──────────────────────────────────────────────────────────────────
+  function launchConfetti() {
+    const emojis = ['🎉', '⭐', '🏊', '💦', '🏅', '🎊'];
+    for (let i = 0; i < 26; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = (2 + Math.random() * 2.5) + 's';
+      p.style.animationDelay = (Math.random() * 0.6) + 's';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 5500);
+    }
+  }
+
   // ── Keyboard ──────────────────────────────────────────────────────────────────
   document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && mode === 'quiz' && answered) nextQuestion();
+    if (e.key === 'Enter') {
+      if (mode === 'quiz' && answered) nextQuestion();
+      if (mode === 'exam' && examAnswered && document.getElementById('examQuestion').style.display !== 'none') nextExamQuestion();
+    }
     if (mode === 'learn') {
       if (e.key === 'ArrowLeft') prevRule();
       if (e.key === 'ArrowRight') nextRule();
