@@ -2,16 +2,27 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ziele-Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ziele</title>
+<meta name="theme-color" content="#0e0f11">
+<meta name="description" content="Meine Ziele im Blick – Fortschritt tracken, ganz ohne Server.">
+<link rel="manifest" href="ziele.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ziele">
+<link rel="apple-touch-icon" href="ziele-icon.svg">
+<link rel="icon" href="ziele-icon.svg">
 <style>
   :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#d4f547;--accent2:#47b8f5;--text:#f0f0ed;--muted:#6b7080;--danger:#f54747;--ok:#47f57a;--radius:14px; }
   * { box-sizing:border-box;margin:0;padding:0; }
-  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:0 0 100px 0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:env(safe-area-inset-top) 0 calc(100px + env(safe-area-inset-bottom)) 0; }
   .header { padding:28px 20px 0; }
+  .header-top { display:flex;justify-content:space-between;align-items:flex-start;gap:10px; }
   .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
   .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
   .header-meta { font-size:11px;color:var(--muted);margin-top:6px; }
+  .btn-install { display:none;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:20px;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0; }
   .stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:20px 20px 0; }
   .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center; }
   .stat-value { font-size:20px;font-weight:700;color:var(--accent);line-height:1; }
@@ -24,7 +35,6 @@
   .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
   .form-card.edit-mode .form-title { color:var(--accent2); }
   .form-card.edit-mode .form-title::before { background:var(--accent2); }
-  .field-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
   .field-row-3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px; }
   .field { margin-bottom:10px; }
   label { display:block;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:5px; }
@@ -40,10 +50,6 @@
   .btn-cancel { width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;cursor:pointer; }
   .list-header { display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;gap:8px; }
   .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1; }
-  .sync-dot { width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0; }
-  .sync-dot.ok { background:var(--ok); }
-  .sync-dot.err { background:var(--danger); }
-  .btn-refresh { background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;line-height:1; }
   .filter-bar { display:flex;gap:6px;padding:12px 20px 0;overflow-x:auto;-webkit-overflow-scrolling:touch; }
   .filter-bar::-webkit-scrollbar { display:none; }
   .filter-chip { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--muted);white-space:nowrap;flex-shrink:0; }
@@ -90,9 +96,14 @@
 <body>
 
 <div class="header">
-  <div class="header-label">Ziele-Dashboard</div>
-  <h1>Meine Ziele</h1>
-  <div class="header-meta" id="headerMeta">0 Ziele</div>
+  <div class="header-top">
+    <div>
+      <div class="header-label">Ziele-Dashboard</div>
+      <h1>Meine Ziele</h1>
+      <div class="header-meta" id="headerMeta">0 Ziele</div>
+    </div>
+    <button class="btn-install" id="btnInstall" onclick="installApp()">&#8595; App</button>
+  </div>
 </div>
 
 <div class="stats">
@@ -147,8 +158,6 @@
 
 <div class="list-header">
   <div class="list-title">Ziele</div>
-  <div class="sync-dot" id="syncDot" title="Sync-Status"></div>
-  <button class="btn-refresh" onclick="loadZiele()" title="Aktualisieren">&#8635;</button>
 </div>
 
 <div class="filter-bar" id="filterBar"></div>
@@ -165,53 +174,19 @@
 <div class="toast" id="toast"></div>
 
 <script>
-var API_URL = 'https://tonibader.synology.me/ziele-api.php';
-var API_KEY = 'zl_x8Qw4tR2mvBn';
-
 var ziele = [];
 var editId = null;
 var aktivFilter = 'alle';
 
-async function loadZiele() {
-  var local = JSON.parse(localStorage.getItem('ziele') || '[]');
-  var controller = new AbortController();
-  var timer = setTimeout(function(){controller.abort();}, 5000);
-  try {
-    var r = await fetch(API_URL, {headers:{'X-API-Key':API_KEY}, signal:controller.signal});
-    clearTimeout(timer);
-    if (r.ok) {
-      var remote = await r.json();
-      ziele = remote.length > 0 ? remote : local;
-      setSyncDot(true);
-    } else {
-      ziele = local;
-      setSyncDot(false);
-    }
-  } catch(e) {
-    clearTimeout(timer);
-    ziele = local;
-    setSyncDot(false);
-    if (local.length === 0) showToast('Offline – keine lokalen Daten');
-  }
+function loadZiele() {
+  try { ziele = JSON.parse(localStorage.getItem('ziele') || '[]'); }
+  catch(e) { ziele = []; }
+  if (!Array.isArray(ziele)) ziele = [];
   render();
 }
 
-async function save() {
+function save() {
   localStorage.setItem('ziele', JSON.stringify(ziele));
-  try {
-    var r = await fetch(API_URL, {method:'POST', headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'}, body:JSON.stringify(ziele)});
-    setSyncDot(r.ok);
-    return r.ok;
-  } catch(e) {
-    setSyncDot(false);
-    return false;
-  }
-}
-
-function setSyncDot(ok) {
-  var d = document.getElementById('syncDot');
-  d.className = 'sync-dot ' + (ok ? 'ok' : 'err');
-  d.title = ok ? 'Synology: gespeichert' : 'Nur lokal gespeichert';
 }
 
 function selectKat(el) {
@@ -319,7 +294,7 @@ function setProgress(id) {
   if (!z) return;
   var eingabe = prompt('Aktueller Stand' + (z.einheit ? ' (' + z.einheit + ')' : '') + ':', z.aktuell);
   if (eingabe === null) return;
-  var val = parseFloat(eingabe.replace(',', '.'));
+  var val = parseFloat(String(eingabe).replace(',', '.'));
   if (isNaN(val) || val < 0) { showToast('Ungültiger Wert'); return; }
   z.aktuell = Math.round(val*100)/100;
   save(); render();
@@ -352,11 +327,12 @@ function renderFilter() {
   ziele.forEach(function(z){ kats[z.kategorie] = (kats[z.kategorie]||0)+1; });
   var chips = [['alle','Alle']];
   Object.keys(kats).sort().forEach(function(k){ chips.push([k, k]); });
+  if (aktivFilter !== 'alle' && !kats[aktivFilter]) aktivFilter = 'alle';
   var bar = document.getElementById('filterBar');
   bar.innerHTML = chips.map(function(c){
     var akt = c[0]===aktivFilter ? ' active' : '';
     var cnt = c[0]==='alle' ? ziele.length : kats[c[0]];
-    return '<div class="filter-chip'+akt+'" onclick="setFilter('+JSON.stringify(c[0]).replace(/"/g,'&quot;')+')">'+c[1]+' ('+cnt+')</div>';
+    return '<div class="filter-chip'+akt+'" onclick="setFilter('+JSON.stringify(c[0]).replace(/"/g,'&quot;')+')">'+esc(c[1])+' ('+cnt+')</div>';
   }).join('');
 }
 
@@ -390,7 +366,7 @@ function render() {
     var p = pct(z);
     var done = p >= 100;
     var di = deadlineInfo(z);
-    var einheit = z.einheit ? ' ' + z.einheit : '';
+    var einheit = z.einheit ? ' ' + esc(z.einheit) : '';
     var badge = done ? '<div class="done-badge">✓ Erreicht</div>' : '';
     var notiz = z.notiz ? '<div class="ziel-notiz">' + esc(z.notiz) + '</div>' : '';
     return '<div class="ziel-card' + (done?' done':'') + '">' +
@@ -434,10 +410,8 @@ function importJSON(input) {
       var neu = 0;
       var ids = new Set(ziele.map(function(z){return z.id;}));
       data.forEach(function(z){if(!ids.has(z.id)){ziele.push(z);neu++;}});
-      render();
-      save().then(function(ok){
-        showToast(ok ? neu+' Ziele importiert & gespeichert!' : neu+' Ziele importiert (nur lokal)');
-      });
+      save(); render();
+      showToast(neu+' Ziele importiert!');
     } catch(e) { showToast('Ungültige Datei!'); }
   };
   reader.readAsText(file);
@@ -450,11 +424,36 @@ function showToast(msg) {
   setTimeout(function(){t.classList.remove('show');},2500);
 }
 
-loadZiele();
-
-document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible') loadZiele();
+// --- PWA: Installation & Offline ---
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('btnInstall').style.display = 'block';
 });
+window.addEventListener('appinstalled', function(){
+  deferredPrompt = null;
+  document.getElementById('btnInstall').style.display = 'none';
+  showToast('App installiert!');
+});
+async function installApp() {
+  if (!deferredPrompt) {
+    showToast('Über das Browser-Menü „Zum Startbildschirm"');
+    return;
+  }
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('btnInstall').style.display = 'none';
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('ziele-sw.js').catch(function(){});
+  });
+}
+
+loadZiele();
 </script>
 </body>
 </html>
