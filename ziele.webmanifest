@@ -1,0 +1,16 @@
+{
+  "name": "Ziele-Dashboard",
+  "short_name": "Ziele",
+  "description": "Meine Ziele im Blick – Fortschritt tracken, ganz ohne Server.",
+  "start_url": "ziele.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e0f11",
+  "theme_color": "#0e0f11",
+  "lang": "de",
+  "icons": [
+    { "src": "ziele-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "ziele-icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
