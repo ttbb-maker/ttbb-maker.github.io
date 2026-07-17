@@ -1,7 +1,7 @@
 // Service-Worker für das Ziele-Dashboard.
 // Fängt bewusst NUR die Ziele-Dateien ab, damit die übrigen Apps
 // auf ttbb-maker.github.io unberührt bleiben (kein Site-weites Caching).
-var CACHE = 'ziele-v1';
+var CACHE = 'ziele-v2';
 var ASSETS = [
   'ziele.html',
   'ziele.webmanifest',

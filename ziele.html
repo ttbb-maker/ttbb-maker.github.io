@@ -14,22 +14,57 @@
 <link rel="apple-touch-icon" href="ziele-icon.svg">
 <link rel="icon" href="ziele-icon.svg">
 <style>
-  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#d4f547;--accent2:#47b8f5;--text:#f0f0ed;--muted:#6b7080;--danger:#f54747;--ok:#47f57a;--radius:14px; }
+  :root { --bg:#0e0f11;--surface:#16181c;--card:#1e2128;--border:#2a2d35;--accent:#d4f547;--accent2:#47b8f5;--accent3:#b77ff5;--text:#f0f0ed;--muted:#6b7080;--danger:#f54747;--ok:#47f57a;--radius:14px; }
   * { box-sizing:border-box;margin:0;padding:0; }
-  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:env(safe-area-inset-top) 0 calc(100px + env(safe-area-inset-bottom)) 0; }
-  .header { padding:28px 20px 0; }
+  body { background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding:env(safe-area-inset-top) 0 calc(80px + env(safe-area-inset-bottom)) 0; }
+  .header { padding:24px 20px 0; }
   .header-top { display:flex;justify-content:space-between;align-items:flex-start;gap:10px; }
   .header-label { font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px; }
-  .header h1 { font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
+  .header h1 { font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1; }
   .header-meta { font-size:11px;color:var(--muted);margin-top:6px; }
   .btn-install { display:none;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:20px;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0; }
-  .stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:20px 20px 0; }
+
+  .view { display:none; }
+  .view.active { display:block; }
+
+  .stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:18px 20px 0; }
   .stat-box { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center; }
   .stat-value { font-size:20px;font-weight:700;color:var(--accent);line-height:1; }
   .stat-value.blue { color:var(--accent2); }
   .stat-value.green { color:var(--ok); }
+  .stat-value.purple { color:var(--accent3); }
   .stat-label { font-size:9px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.1em; }
-  .form-card { margin:20px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .3s; }
+
+  .section-card { margin:18px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px; }
+  .section-title { font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:14px; }
+
+  /* Donut */
+  .donut-wrap { display:flex;align-items:center;gap:18px; }
+  .donut { flex-shrink:0; }
+  .donut-legend { flex:1;display:flex;flex-direction:column;gap:8px; }
+  .legend-row { display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted); }
+  .legend-dot { width:10px;height:10px;border-radius:3px;flex-shrink:0; }
+  .legend-val { color:var(--text);font-weight:700;margin-left:auto; }
+
+  /* Balken nach Kategorie */
+  .catbar { margin-bottom:12px; }
+  .catbar:last-child { margin-bottom:0; }
+  .catbar-top { display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px; }
+  .catbar-name { color:var(--text); }
+  .catbar-pct { color:var(--muted);font-weight:700; }
+  .bar-track { height:9px;background:var(--surface);border-radius:6px;overflow:hidden;border:1px solid var(--border); }
+  .bar-fill { height:100%;border-radius:6px;transition:width .5s ease; }
+
+  .horizon-row { display:flex;align-items:center;gap:12px;margin-bottom:14px; }
+  .horizon-row:last-child { margin-bottom:0; }
+  .horizon-ic { font-size:22px;flex-shrink:0;width:30px;text-align:center; }
+  .horizon-body { flex:1; }
+  .horizon-label { display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px; }
+  .horizon-label b { color:var(--text); }
+  .horizon-label span { color:var(--muted); }
+
+  /* Formular */
+  .form-card { margin:18px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .3s; }
   .form-card.edit-mode { border-color:var(--accent2); }
   .form-title { font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px; }
   .form-title::before { content:'';display:block;width:8px;height:8px;background:var(--accent);border-radius:50%; }
@@ -48,15 +83,22 @@
   .btn-add { width:100%;margin-top:14px;background:var(--accent);color:#0e0f11;border:none;border-radius:10px;padding:15px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer; }
   .btn-add:active { opacity:.8; }
   .btn-cancel { width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;cursor:pointer; }
+
   .list-header { display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;gap:8px; }
   .list-title { font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1; }
+  .year-stepper { display:flex;align-items:center;gap:10px; }
+  .year-stepper button { background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer; }
+  .year-stepper span { font-size:15px;font-weight:800;color:var(--accent);min-width:48px;text-align:center; }
+
   .filter-bar { display:flex;gap:6px;padding:12px 20px 0;overflow-x:auto;-webkit-overflow-scrolling:touch; }
   .filter-bar::-webkit-scrollbar { display:none; }
   .filter-chip { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--muted);white-space:nowrap;flex-shrink:0; }
   .filter-chip.active { background:var(--accent2);border-color:var(--accent2);color:#0e0f11;font-weight:700; }
-  .data-bar { display:flex;gap:8px;padding:12px 20px 0;justify-content:flex-end; }
+
+  .data-bar { display:flex;gap:8px;padding:16px 20px 0;justify-content:flex-end; }
   .btn-data { background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;font-family:inherit;font-size:11px;cursor:pointer; }
   .btn-data:hover { border-color:var(--accent);color:var(--accent); }
+
   .ziel-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:10px; }
   .ziel-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;transition:border-color .2s; }
   .ziel-card.done { border-color:var(--ok); }
@@ -87,10 +129,39 @@
   .ziel-card:hover .btn-edit,.ziel-card:active .btn-edit { display:flex; }
   .done-badge { position:absolute;top:12px;right:12px;background:var(--ok);color:#0e0f11;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:800; }
   .ziel-card:hover .done-badge,.ziel-card:active .done-badge { display:none; }
+
+  /* Check-Liste (Jahres- & Visionsziele) */
+  .add-row { display:flex;gap:8px;padding:14px 20px 0; }
+  .add-row input { flex:1; }
+  .add-row button { background:var(--accent);color:#0e0f11;border:none;border-radius:8px;padding:0 18px;font-size:22px;font-weight:700;cursor:pointer;flex-shrink:0; }
+  .check-list { padding:12px 20px 0;display:flex;flex-direction:column;gap:8px; }
+  .check-item { background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 14px;display:flex;align-items:flex-start;gap:12px;position:relative; }
+  .check-item.done { border-color:var(--ok); }
+  .check-box { width:24px;height:24px;border-radius:7px;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:transparent;transition:all .2s;margin-top:1px; }
+  .check-item.done .check-box { background:var(--ok);border-color:var(--ok);color:#0e0f11; }
+  .check-text { flex:1;font-size:15px;line-height:1.4;color:var(--text);word-break:break-word; }
+  .check-item.done .check-text { color:var(--muted);text-decoration:line-through; }
+  .check-del { background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 4px;flex-shrink:0; }
+  .check-del:hover { color:var(--danger); }
+
+  /* Notizen */
+  .note-item { background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;position:relative; }
+  .note-text { font-size:14px;line-height:1.5;color:var(--text);white-space:pre-wrap;word-break:break-word;padding-right:24px; }
+  .note-date { font-size:10px;color:var(--muted);margin-top:8px;text-transform:uppercase;letter-spacing:.08em; }
+  .note-del { position:absolute;top:12px;right:12px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer; }
+  .note-del:hover { color:var(--danger); }
+
   .empty-state { text-align:center;padding:40px 20px;color:var(--muted);font-size:13px; }
   .empty-icon { font-size:40px;margin-bottom:12px;opacity:.4; }
-  .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
+
+  .toast { position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0e0f11;border-radius:30px;padding:10px 22px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap; }
   .toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+
+  /* Tab-Leiste */
+  .tabbar { position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:6px 2px calc(6px + env(safe-area-inset-bottom));z-index:100; }
+  .tab-btn { flex:1;background:none;border:none;color:var(--muted);font-family:inherit;font-size:9px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 2px;letter-spacing:.02em; }
+  .tab-btn .ic { font-size:19px;line-height:1; }
+  .tab-btn.active { color:var(--accent); }
 </style>
 </head>
 <body>
@@ -98,110 +169,272 @@
 <div class="header">
   <div class="header-top">
     <div>
-      <div class="header-label">Ziele-Dashboard</div>
-      <h1>Meine Ziele</h1>
-      <div class="header-meta" id="headerMeta">0 Ziele</div>
+      <div class="header-label" id="headerLabel">Ziele-Dashboard</div>
+      <h1 id="headerTitle">Übersicht</h1>
+      <div class="header-meta" id="headerMeta"></div>
     </div>
     <button class="btn-install" id="btnInstall" onclick="installApp()">&#8595; App</button>
   </div>
 </div>
 
-<div class="stats">
-  <div class="stat-box"><div class="stat-value blue" id="statAktiv">0</div><div class="stat-label">Aktiv</div></div>
-  <div class="stat-box"><div class="stat-value green" id="statErreicht">0</div><div class="stat-label">Erreicht</div></div>
-  <div class="stat-box"><div class="stat-value" id="statFortschritt">0%</div><div class="stat-label">&#216; Fortschritt</div></div>
+<!-- ÜBERSICHT -->
+<div class="view active" id="view-uebersicht">
+  <div class="stats">
+    <div class="stat-box"><div class="stat-value blue" id="ovAktiv">0</div><div class="stat-label">Aktive Ziele</div></div>
+    <div class="stat-box"><div class="stat-value green" id="ovErreicht">0</div><div class="stat-label">Erreicht</div></div>
+    <div class="stat-box"><div class="stat-value" id="ovSchnitt">0%</div><div class="stat-label">&#216; Fortschritt</div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Gesamtfortschritt</div>
+    <div class="donut-wrap">
+      <svg class="donut" width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="52" fill="none" stroke="#2a2d35" stroke-width="14"/>
+        <circle id="donutFill" cx="60" cy="60" r="52" fill="none" stroke="#d4f547" stroke-width="14" stroke-linecap="round"
+          stroke-dasharray="326.7" stroke-dashoffset="326.7" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .6s ease"/>
+        <text id="donutPct" x="60" y="60" text-anchor="middle" dominant-baseline="central" font-size="26" font-weight="800" fill="#f0f0ed">0%</text>
+      </svg>
+      <div class="donut-legend" id="donutLegend"></div>
+    </div>
+  </div>
+
+  <div class="section-card" id="catCard">
+    <div class="section-title">Fortschritt nach Kategorie</div>
+    <div id="catBars"></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Zeithorizonte</div>
+    <div class="horizon-row">
+      <div class="horizon-ic">📅</div>
+      <div class="horizon-body">
+        <div class="horizon-label"><b>Jahresziele <span id="hzJahrJahr"></span></b><span id="hzJahrTxt">0 / 0</span></div>
+        <div class="bar-track"><div class="bar-fill" id="hzJahrBar" style="background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%"></div></div>
+      </div>
+    </div>
+    <div class="horizon-row">
+      <div class="horizon-ic">🌟</div>
+      <div class="horizon-body">
+        <div class="horizon-label"><b>5-Jahres-Ziele</b><span id="hzVisionTxt">0 / 0</span></div>
+        <div class="bar-track"><div class="bar-fill" id="hzVisionBar" style="background:linear-gradient(90deg,var(--accent3),var(--accent2));width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-bar">
+    <button class="btn-data" onclick="exportJSON()">&#8593; Sichern</button>
+    <label class="btn-data" style="cursor:pointer;">&#8595; Importieren<input type="file" accept=".json" onchange="importJSON(this)" style="display:none;"></label>
+  </div>
 </div>
 
-<div class="form-card" id="formCard">
-  <div class="form-title" id="formTitle">Ziel hinzuf&#252;gen</div>
-  <div class="field">
-    <label>Titel</label>
-    <input type="text" id="titel" placeholder="z.B. 100 km laufen">
-  </div>
-  <div class="field">
-    <label>Kategorie</label>
-    <div class="tags" id="katTags">
-      <div class="tag active" onclick="selectKat(this)">Sport</div>
-      <div class="tag" onclick="selectKat(this)">Gesundheit</div>
-      <div class="tag" onclick="selectKat(this)">Finanzen</div>
-      <div class="tag" onclick="selectKat(this)">Lernen</div>
-      <div class="tag" onclick="selectKat(this)">Beruf</div>
-      <div class="tag" onclick="selectKat(this)">Sonstiges</div>
-    </div>
-    <input type="text" id="katCustom" placeholder="Oder eigene Kategorie ..." style="margin-top:8px;">
-  </div>
-  <div class="field-row-3">
+<!-- ZIELE (messbar) -->
+<div class="view" id="view-ziele">
+  <div class="form-card" id="formCard">
+    <div class="form-title" id="formTitle">Ziel hinzuf&#252;gen</div>
     <div class="field">
-      <label>Startwert</label>
-      <input type="number" id="aktuell" placeholder="0" step="any">
+      <label>Titel</label>
+      <input type="text" id="titel" placeholder="z.B. 100 km laufen">
     </div>
     <div class="field">
-      <label>Zielwert</label>
-      <input type="number" id="ziel" placeholder="100" step="any">
+      <label>Kategorie</label>
+      <div class="tags" id="katTags">
+        <div class="tag active" onclick="selectKat(this)">Sport</div>
+        <div class="tag" onclick="selectKat(this)">Gesundheit</div>
+        <div class="tag" onclick="selectKat(this)">Finanzen</div>
+        <div class="tag" onclick="selectKat(this)">Lernen</div>
+        <div class="tag" onclick="selectKat(this)">Beruf</div>
+        <div class="tag" onclick="selectKat(this)">Sonstiges</div>
+      </div>
+      <input type="text" id="katCustom" placeholder="Oder eigene Kategorie ..." style="margin-top:8px;">
     </div>
-    <div class="field">
-      <label>Einheit</label>
-      <input type="text" id="einheit" placeholder="km">
+    <div class="field-row-3">
+      <div class="field"><label>Startwert</label><input type="number" id="aktuell" placeholder="0" step="any"></div>
+      <div class="field"><label>Zielwert</label><input type="number" id="ziel" placeholder="100" step="any"></div>
+      <div class="field"><label>Einheit</label><input type="text" id="einheit" placeholder="km"></div>
+    </div>
+    <div class="field"><label>Frist (optional)</label><input type="date" id="deadline"></div>
+    <div class="field"><label>Notiz (optional)</label><textarea id="notiz" placeholder="Warum ist dir dieses Ziel wichtig?"></textarea></div>
+    <button class="btn-add" id="btnAdd" onclick="addZiel()">+ Ziel hinzuf&#252;gen</button>
+    <button class="btn-cancel" id="btnCancel" onclick="cancelEdit()" style="display:none;">Abbrechen</button>
+  </div>
+
+  <div class="filter-bar" id="filterBar"></div>
+  <div class="ziel-list" id="zielList"></div>
+</div>
+
+<!-- JAHRESZIELE -->
+<div class="view" id="view-jahr">
+  <div class="list-header">
+    <div class="list-title">Jahresziele</div>
+    <div class="year-stepper">
+      <button onclick="changeYear(-1)">&#8249;</button>
+      <span id="yearLabel">2026</span>
+      <button onclick="changeYear(1)">&#8250;</button>
     </div>
   </div>
-  <div class="field">
-    <label>Frist (optional)</label>
-    <input type="date" id="deadline">
+  <div class="add-row">
+    <input type="text" id="jahrInput" placeholder="Neues Jahresziel ..." onkeydown="if(event.key==='Enter')addJahr()">
+    <button onclick="addJahr()">+</button>
   </div>
-  <div class="field">
-    <label>Notiz (optional)</label>
-    <textarea id="notiz" placeholder="Warum ist dir dieses Ziel wichtig?"></textarea>
+  <div class="check-list" id="jahrList"></div>
+</div>
+
+<!-- 5-JAHRES-ZIELE -->
+<div class="view" id="view-vision">
+  <div class="list-header">
+    <div class="list-title">5-Jahres-Ziele</div>
+    <span style="font-size:11px;color:var(--muted);" id="visionSub"></span>
   </div>
-  <button class="btn-add" id="btnAdd" onclick="addZiel()">+ Ziel hinzuf&#252;gen</button>
-  <button class="btn-cancel" id="btnCancel" onclick="cancelEdit()" style="display:none;">Abbrechen</button>
+  <div class="add-row">
+    <input type="text" id="visionInput" placeholder="Wo willst du in 5 Jahren sein?" onkeydown="if(event.key==='Enter')addVision()">
+    <button onclick="addVision()">+</button>
+  </div>
+  <div class="check-list" id="visionList"></div>
 </div>
 
-<div class="list-header">
-  <div class="list-title">Ziele</div>
-</div>
-
-<div class="filter-bar" id="filterBar"></div>
-
-<div class="data-bar">
-  <button class="btn-data" onclick="exportJSON()">&#8593; Sichern</button>
-  <label class="btn-data" style="cursor:pointer;">&#8595; Importieren<input type="file" accept=".json" onchange="importJSON(this)" style="display:none;"></label>
-</div>
-
-<div class="ziel-list" id="zielList">
-  <div class="empty-state"><div class="empty-icon">&#127919;</div>Noch keine Ziele &#8211; leg dein erstes an!</div>
+<!-- NOTIZEN -->
+<div class="view" id="view-notizen">
+  <div class="list-header"><div class="list-title">Notizen &amp; Ideen</div></div>
+  <div class="add-row" style="align-items:stretch;">
+    <textarea id="notizInput" placeholder="Idee oder Gedanke festhalten ..." style="flex:1;min-height:44px;"></textarea>
+    <button onclick="addNotiz()">+</button>
+  </div>
+  <div class="check-list" id="notizList"></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<!-- TAB-LEISTE -->
+<div class="tabbar">
+  <button class="tab-btn active" id="tab-uebersicht" onclick="switchTab('uebersicht')"><span class="ic">📊</span>Übersicht</button>
+  <button class="tab-btn" id="tab-ziele" onclick="switchTab('ziele')"><span class="ic">🎯</span>Ziele</button>
+  <button class="tab-btn" id="tab-jahr" onclick="switchTab('jahr')"><span class="ic">📅</span>Jahr</button>
+  <button class="tab-btn" id="tab-vision" onclick="switchTab('vision')"><span class="ic">🌟</span>5 Jahre</button>
+  <button class="tab-btn" id="tab-notizen" onclick="switchTab('notizen')"><span class="ic">📝</span>Notizen</button>
+</div>
+
 <script>
-var ziele = [];
+// --- Daten ---
+var ziele = [], jahresziele = [], visionziele = [], notizen = [];
 var editId = null;
 var aktivFilter = 'alle';
+var aktivesJahr = new Date().getFullYear();
+var aktiverTab = 'uebersicht';
 
-function loadZiele() {
-  try { ziele = JSON.parse(localStorage.getItem('ziele') || '[]'); }
-  catch(e) { ziele = []; }
-  if (!Array.isArray(ziele)) ziele = [];
-  render();
+var TITEL = {
+  uebersicht:['Übersicht',''],
+  ziele:['Meine Ziele',''],
+  jahr:['Jahresziele',''],
+  vision:['5-Jahres-Ziele',''],
+  notizen:['Notizen & Ideen','']
+};
+
+function loadAll() {
+  ziele = readArr('ziele');
+  jahresziele = readArr('jahresziele');
+  visionziele = readArr('visionziele');
+  notizen = readArr('notizen');
+  renderAll();
 }
-
+function readArr(key) {
+  try { var v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v : []; }
+  catch(e) { return []; }
+}
 function save() {
   localStorage.setItem('ziele', JSON.stringify(ziele));
+  localStorage.setItem('jahresziele', JSON.stringify(jahresziele));
+  localStorage.setItem('visionziele', JSON.stringify(visionziele));
+  localStorage.setItem('notizen', JSON.stringify(notizen));
 }
 
+function switchTab(name) {
+  aktiverTab = name;
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('headerTitle').textContent = TITEL[name][0];
+  window.scrollTo({top:0});
+  renderAll();
+}
+
+function renderAll() {
+  renderUebersicht();
+  renderZiele();
+  renderJahr();
+  renderVision();
+  renderNotizen();
+}
+
+/* =================== ÜBERSICHT =================== */
+function renderUebersicht() {
+  var aktiv = 0, erreicht = 0, summe = 0;
+  ziele.forEach(function(z){ var p = pct(z); summe += p; if (p >= 100) erreicht++; else aktiv++; });
+  var avg = ziele.length ? Math.round(summe/ziele.length) : 0;
+  document.getElementById('ovAktiv').textContent = aktiv;
+  document.getElementById('ovErreicht').textContent = erreicht;
+  document.getElementById('ovSchnitt').textContent = avg + '%';
+
+  // Donut
+  var circ = 326.7;
+  document.getElementById('donutFill').setAttribute('stroke-dashoffset', circ * (1 - avg/100));
+  document.getElementById('donutPct').textContent = avg + '%';
+  document.getElementById('donutLegend').innerHTML =
+    legendRow('#47b8f5','In Arbeit', aktiv) +
+    legendRow('#47f57a','Erreicht', erreicht) +
+    legendRow('#6b7080','Ziele gesamt', ziele.length);
+
+  // Kategorie-Balken
+  var cats = {};
+  ziele.forEach(function(z){
+    if (!cats[z.kategorie]) cats[z.kategorie] = {sum:0,n:0};
+    cats[z.kategorie].sum += pct(z); cats[z.kategorie].n++;
+  });
+  var keys = Object.keys(cats).sort(function(a,b){ return (cats[b].sum/cats[b].n) - (cats[a].sum/cats[a].n); });
+  var palette = ['#d4f547','#47b8f5','#b77ff5','#47f57a','#f5a247','#f54781'];
+  var catCard = document.getElementById('catCard');
+  if (!keys.length) {
+    catCard.style.display = 'none';
+  } else {
+    catCard.style.display = 'block';
+    document.getElementById('catBars').innerHTML = keys.map(function(k,i){
+      var p = Math.round(cats[k].sum / cats[k].n);
+      var col = palette[i % palette.length];
+      return '<div class="catbar"><div class="catbar-top"><span class="catbar-name">' + esc(k) + '</span><span class="catbar-pct">' + p + '%</span></div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + p + '%;background:' + col + '"></div></div></div>';
+    }).join('');
+  }
+
+  // Horizonte
+  var jj = jahresziele.filter(function(j){ return j.jahr === aktivesJahr; });
+  var jDone = jj.filter(function(j){ return j.done; }).length;
+  document.getElementById('hzJahrJahr').textContent = aktivesJahr;
+  document.getElementById('hzJahrTxt').textContent = jDone + ' / ' + jj.length;
+  document.getElementById('hzJahrBar').style.width = (jj.length ? (jDone/jj.length*100) : 0) + '%';
+
+  var vDone = visionziele.filter(function(v){ return v.done; }).length;
+  document.getElementById('hzVisionTxt').textContent = vDone + ' / ' + visionziele.length;
+  document.getElementById('hzVisionBar').style.width = (visionziele.length ? (vDone/visionziele.length*100) : 0) + '%';
+
+  var gesamt = ziele.length + jahresziele.length + visionziele.length;
+  document.getElementById('headerMeta').textContent = gesamt + ' Ziele · ' + notizen.length + ' Notizen';
+}
+function legendRow(col, label, val) {
+  return '<div class="legend-row"><span class="legend-dot" style="background:' + col + '"></span>' + label + '<span class="legend-val">' + val + '</span></div>';
+}
+
+/* =================== ZIELE (messbar) =================== */
 function selectKat(el) {
   document.querySelectorAll('#katTags .tag').forEach(function(t){t.classList.remove('active');});
   el.classList.add('active');
   document.getElementById('katCustom').value = '';
 }
-
 function getKat() {
   var c = document.getElementById('katCustom').value.trim();
   if (c) return c;
   var a = document.querySelector('#katTags .tag.active');
   return a ? a.textContent : 'Sonstiges';
 }
-
 function addZiel() {
   var titel = document.getElementById('titel').value.trim();
   var kat = getKat();
@@ -225,9 +458,8 @@ function addZiel() {
     showToast('Ziel gespeichert!');
     resetForm();
   }
-  save(); render();
+  save(); renderAll();
 }
-
 function editZiel(id) {
   var z = ziele.find(function(z){return z.id===id;});
   if (!z) return;
@@ -241,9 +473,7 @@ function editZiel(id) {
   document.getElementById('katCustom').value = '';
   var matched = false;
   document.querySelectorAll('#katTags .tag').forEach(function(t){
-    var on = t.textContent===z.kategorie;
-    t.classList.toggle('active', on);
-    if (on) matched = true;
+    var on = t.textContent===z.kategorie; t.classList.toggle('active', on); if (on) matched = true;
   });
   if (!matched) document.getElementById('katCustom').value = z.kategorie;
   document.getElementById('formTitle').textContent = 'Ziel bearbeiten';
@@ -252,7 +482,6 @@ function editZiel(id) {
   document.getElementById('btnCancel').style.display = 'block';
   document.getElementById('formCard').scrollIntoView({behavior:'smooth'});
 }
-
 function cancelEdit() {
   editId = null;
   resetForm();
@@ -261,24 +490,15 @@ function cancelEdit() {
   document.getElementById('btnAdd').textContent = '+ Ziel hinzufügen';
   document.getElementById('btnCancel').style.display = 'none';
 }
-
 function resetForm() {
-  document.getElementById('titel').value = '';
-  document.getElementById('aktuell').value = '';
-  document.getElementById('ziel').value = '';
-  document.getElementById('einheit').value = '';
-  document.getElementById('deadline').value = '';
-  document.getElementById('notiz').value = '';
-  document.getElementById('katCustom').value = '';
+  ['titel','aktuell','ziel','einheit','deadline','notiz','katCustom'].forEach(function(id){ document.getElementById(id).value = ''; });
   document.querySelectorAll('#katTags .tag').forEach(function(t,i){t.classList.toggle('active',i===0);});
 }
-
 function deleteZiel(id) {
   if (!confirm('Ziel wirklich löschen?')) return;
   ziele = ziele.filter(function(z){return z.id!==id;});
-  save(); render();
+  save(); renderAll();
 }
-
 function bump(id, dir) {
   var z = ziele.find(function(z){return z.id===id;});
   if (!z) return;
@@ -286,9 +506,8 @@ function bump(id, dir) {
   var neu = z.aktuell + dir*step;
   if (neu < 0) neu = 0;
   z.aktuell = Math.round(neu*100)/100;
-  save(); render();
+  save(); renderAll();
 }
-
 function setProgress(id) {
   var z = ziele.find(function(z){return z.id===id;});
   if (!z) return;
@@ -297,19 +516,11 @@ function setProgress(id) {
   var val = parseFloat(String(eingabe).replace(',', '.'));
   if (isNaN(val) || val < 0) { showToast('Ungültiger Wert'); return; }
   z.aktuell = Math.round(val*100)/100;
-  save(); render();
+  save(); renderAll();
   showToast('Fortschritt aktualisiert!');
 }
-
-function fmt(n) {
-  return Number(n).toLocaleString('de-DE',{maximumFractionDigits:2});
-}
-
-function pct(z) {
-  if (!z.ziel) return 0;
-  return Math.min(100, Math.max(0, (z.aktuell/z.ziel)*100));
-}
-
+function fmt(n) { return Number(n).toLocaleString('de-DE',{maximumFractionDigits:2}); }
+function pct(z) { if (!z.ziel) return 0; return Math.min(100, Math.max(0, (z.aktuell/z.ziel)*100)); }
 function deadlineInfo(z) {
   if (!z.deadline) return {text:'Keine Frist', cls:''};
   var heute = new Date(); heute.setHours(0,0,0,0);
@@ -321,41 +532,21 @@ function deadlineInfo(z) {
   if (diff <= 14) return {text:'⏰ noch ' + diff + ' Tage · ' + ds, cls:'soon'};
   return {text:'📅 bis ' + ds, cls:''};
 }
-
 function renderFilter() {
   var kats = {};
   ziele.forEach(function(z){ kats[z.kategorie] = (kats[z.kategorie]||0)+1; });
   var chips = [['alle','Alle']];
   Object.keys(kats).sort().forEach(function(k){ chips.push([k, k]); });
   if (aktivFilter !== 'alle' && !kats[aktivFilter]) aktivFilter = 'alle';
-  var bar = document.getElementById('filterBar');
-  bar.innerHTML = chips.map(function(c){
+  document.getElementById('filterBar').innerHTML = chips.map(function(c){
     var akt = c[0]===aktivFilter ? ' active' : '';
     var cnt = c[0]==='alle' ? ziele.length : kats[c[0]];
     return '<div class="filter-chip'+akt+'" onclick="setFilter('+JSON.stringify(c[0]).replace(/"/g,'&quot;')+')">'+esc(c[1])+' ('+cnt+')</div>';
   }).join('');
 }
-
-function setFilter(f) {
-  aktivFilter = f;
-  render();
-}
-
-function render() {
-  var aktiv = 0, erreicht = 0, summe = 0;
-  ziele.forEach(function(z){
-    var p = pct(z);
-    summe += p;
-    if (p >= 100) erreicht++; else aktiv++;
-  });
-  var avg = ziele.length ? Math.round(summe/ziele.length) : 0;
-  document.getElementById('statAktiv').textContent = aktiv;
-  document.getElementById('statErreicht').textContent = erreicht;
-  document.getElementById('statFortschritt').textContent = avg + '%';
-  document.getElementById('headerMeta').textContent = ziele.length + (ziele.length===1 ? ' Ziel' : ' Ziele') + (erreicht ? ' · ' + erreicht + ' erreicht' : '');
-
+function setFilter(f) { aktivFilter = f; renderZiele(); }
+function renderZiele() {
   renderFilter();
-
   var liste = ziele.filter(function(z){ return aktivFilter==='alle' || z.kategorie===aktivFilter; });
   var el = document.getElementById('zielList');
   if (!liste.length) {
@@ -363,42 +554,128 @@ function render() {
     return;
   }
   el.innerHTML = liste.map(function(z){
-    var p = pct(z);
-    var done = p >= 100;
-    var di = deadlineInfo(z);
+    var p = pct(z), done = p >= 100, di = deadlineInfo(z);
     var einheit = z.einheit ? ' ' + esc(z.einheit) : '';
     var badge = done ? '<div class="done-badge">✓ Erreicht</div>' : '';
     var notiz = z.notiz ? '<div class="ziel-notiz">' + esc(z.notiz) + '</div>' : '';
     return '<div class="ziel-card' + (done?' done':'') + '">' +
       '<button class="btn-edit" onclick="editZiel('+z.id+')">&#9998;</button>' +
-      '<button class="btn-delete" onclick="deleteZiel('+z.id+')">&#10005;</button>' +
-      badge +
-      '<div class="ziel-top"><div class="ziel-titel">' + esc(z.titel) + '</div><div class="ziel-kat">' + esc(z.kategorie) + '</div></div>' +
-      notiz +
-      '<div class="progress-wrap">' +
-        '<div class="progress-info"><span class="progress-vals" onclick="setProgress('+z.id+')" style="cursor:pointer;">' + fmt(z.aktuell) + ' / ' + fmt(z.ziel) + einheit + '</span><span class="progress-pct">' + Math.round(p) + '%</span></div>' +
-        '<div class="progress-bar"><div class="progress-fill" style="width:' + p + '%"></div></div>' +
-      '</div>' +
+      '<button class="btn-delete" onclick="deleteZiel('+z.id+')">&#10005;</button>' + badge +
+      '<div class="ziel-top"><div class="ziel-titel">' + esc(z.titel) + '</div><div class="ziel-kat">' + esc(z.kategorie) + '</div></div>' + notiz +
+      '<div class="progress-wrap"><div class="progress-info"><span class="progress-vals" onclick="setProgress('+z.id+')" style="cursor:pointer;">' + fmt(z.aktuell) + ' / ' + fmt(z.ziel) + einheit + '</span><span class="progress-pct">' + Math.round(p) + '%</span></div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + p + '%"></div></div></div>' +
       '<div class="ziel-foot"><span class="ziel-deadline ' + di.cls + '">' + di.text + '</span>' +
-        '<span class="quick-btns"><button class="btn-quick minus" onclick="bump('+z.id+',-1)">&#8722;</button><button class="btn-quick" onclick="bump('+z.id+',1)">+</button></span>' +
-      '</div>' +
-    '</div>';
+      '<span class="quick-btns"><button class="btn-quick minus" onclick="bump('+z.id+',-1)">&#8722;</button><button class="btn-quick" onclick="bump('+z.id+',1)">+</button></span></div></div>';
   }).join('');
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/* =================== JAHRESZIELE =================== */
+function changeYear(d) { aktivesJahr += d; renderJahr(); renderUebersicht(); }
+function addJahr() {
+  var inp = document.getElementById('jahrInput');
+  var t = inp.value.trim();
+  if (!t) return;
+  jahresziele.unshift({id:Date.now(), jahr:aktivesJahr, text:t, done:false, erstellt:Date.now()});
+  inp.value = '';
+  save(); renderJahr(); renderUebersicht();
+}
+function toggleJahr(id) {
+  var j = jahresziele.find(function(x){return x.id===id;});
+  if (j) { j.done = !j.done; save(); renderJahr(); renderUebersicht(); }
+}
+function deleteJahr(id) {
+  jahresziele = jahresziele.filter(function(x){return x.id!==id;});
+  save(); renderJahr(); renderUebersicht();
+}
+function renderJahr() {
+  document.getElementById('yearLabel').textContent = aktivesJahr;
+  var liste = jahresziele.filter(function(j){ return j.jahr === aktivesJahr; });
+  var el = document.getElementById('jahrList');
+  if (!liste.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div>Noch keine Ziele für ' + aktivesJahr + '</div>';
+    return;
+  }
+  el.innerHTML = liste.map(function(j){
+    return checkItemHTML(j, 'toggleJahr', 'deleteJahr');
+  }).join('');
 }
 
+/* =================== 5-JAHRES-ZIELE =================== */
+function addVision() {
+  var inp = document.getElementById('visionInput');
+  var t = inp.value.trim();
+  if (!t) return;
+  visionziele.unshift({id:Date.now(), text:t, done:false, erstellt:Date.now()});
+  inp.value = '';
+  save(); renderVision(); renderUebersicht();
+}
+function toggleVision(id) {
+  var v = visionziele.find(function(x){return x.id===id;});
+  if (v) { v.done = !v.done; save(); renderVision(); renderUebersicht(); }
+}
+function deleteVision(id) {
+  visionziele = visionziele.filter(function(x){return x.id!==id;});
+  save(); renderVision(); renderUebersicht();
+}
+function renderVision() {
+  document.getElementById('visionSub').textContent = 'bis ' + (new Date().getFullYear() + 5);
+  var el = document.getElementById('visionList');
+  if (!visionziele.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🌟</div>Halte deine großen Ziele für die nächsten 5 Jahre fest</div>';
+    return;
+  }
+  el.innerHTML = visionziele.map(function(v){
+    return checkItemHTML(v, 'toggleVision', 'deleteVision');
+  }).join('');
+}
+
+function checkItemHTML(item, toggleFn, delFn) {
+  return '<div class="check-item' + (item.done?' done':'') + '">' +
+    '<div class="check-box" onclick="' + toggleFn + '(' + item.id + ')">✓</div>' +
+    '<div class="check-text" onclick="' + toggleFn + '(' + item.id + ')">' + esc(item.text) + '</div>' +
+    '<button class="check-del" onclick="' + delFn + '(' + item.id + ')">&#10005;</button></div>';
+}
+
+/* =================== NOTIZEN =================== */
+function addNotiz() {
+  var inp = document.getElementById('notizInput');
+  var t = inp.value.trim();
+  if (!t) return;
+  notizen.unshift({id:Date.now(), text:t, erstellt:Date.now()});
+  inp.value = '';
+  save(); renderNotizen(); renderUebersicht();
+  showToast('Notiz gespeichert!');
+}
+function deleteNotiz(id) {
+  if (!confirm('Notiz wirklich löschen?')) return;
+  notizen = notizen.filter(function(x){return x.id!==id;});
+  save(); renderNotizen(); renderUebersicht();
+}
+function renderNotizen() {
+  var el = document.getElementById('notizList');
+  if (!notizen.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div>Noch keine Notizen – halte deine Ideen fest!</div>';
+    return;
+  }
+  el.innerHTML = notizen.map(function(n){
+    var ds = new Date(n.erstellt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+    return '<div class="note-item"><button class="note-del" onclick="deleteNotiz(' + n.id + ')">&#10005;</button>' +
+      '<div class="note-text">' + esc(n.text) + '</div><div class="note-date">' + ds + '</div></div>';
+  }).join('');
+}
+
+/* =================== Gemeinsam =================== */
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function exportJSON() {
-  var blob = new Blob([JSON.stringify(ziele,null,2)],{type:'application/json'});
+  var data = { version:2, exportiert:new Date().toISOString(), ziele:ziele, jahresziele:jahresziele, visionziele:visionziele, notizen:notizen };
+  var blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href=url; a.download='Ziele_Backup.json';
   a.click(); URL.revokeObjectURL(url);
   showToast('Backup gespeichert!');
 }
-
 function importJSON(input) {
   var file = input.files[0];
   if (!file) return;
@@ -406,16 +683,25 @@ function importJSON(input) {
   reader.onload = function(e){
     try {
       var data = JSON.parse(e.target.result);
-      if (!Array.isArray(data)) throw new Error();
-      var neu = 0;
-      var ids = new Set(ziele.map(function(z){return z.id;}));
-      data.forEach(function(z){if(!ids.has(z.id)){ziele.push(z);neu++;}});
-      save(); render();
-      showToast(neu+' Ziele importiert!');
+      if (Array.isArray(data)) {
+        // Altes Format: nur messbare Ziele
+        mergeById(ziele, data);
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray(data.ziele)) mergeById(ziele, data.ziele);
+        if (Array.isArray(data.jahresziele)) mergeById(jahresziele, data.jahresziele);
+        if (Array.isArray(data.visionziele)) mergeById(visionziele, data.visionziele);
+        if (Array.isArray(data.notizen)) mergeById(notizen, data.notizen);
+      } else { throw new Error(); }
+      save(); renderAll();
+      showToast('Backup importiert!');
     } catch(e) { showToast('Ungültige Datei!'); }
   };
   reader.readAsText(file);
   input.value = '';
+}
+function mergeById(target, incoming) {
+  var ids = new Set(target.map(function(x){return x.id;}));
+  incoming.forEach(function(x){ if (x && !ids.has(x.id)) target.push(x); });
 }
 
 function showToast(msg) {
@@ -437,23 +723,17 @@ window.addEventListener('appinstalled', function(){
   showToast('App installiert!');
 });
 async function installApp() {
-  if (!deferredPrompt) {
-    showToast('Über das Browser-Menü „Zum Startbildschirm"');
-    return;
-  }
+  if (!deferredPrompt) { showToast('Über das Browser-Menü „Zum Startbildschirm"'); return; }
   deferredPrompt.prompt();
   await deferredPrompt.userChoice;
   deferredPrompt = null;
   document.getElementById('btnInstall').style.display = 'none';
 }
-
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('ziele-sw.js').catch(function(){});
-  });
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('ziele-sw.js').catch(function(){}); });
 }
 
-loadZiele();
+loadAll();
 </script>
 </body>
 </html>
