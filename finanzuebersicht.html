@@ -291,7 +291,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <button class="btn btn-ghost btn-sm" onclick="addSnapshot()">📸 Snapshot speichern</button>
     <button class="btn btn-ghost btn-sm" onclick="openExportModal()">📤 Exportieren</button>
     <label class="btn btn-ghost btn-sm" style="cursor:pointer">📥 Importieren<input type="file" accept=".json" onchange="importData(this)" style="display:none"></label>
-    <button class="btn btn-primary btn-sm" id="tr-import-btn" onclick="importTradeRepublic()" title="Trade Republic Vermögensübersicht 21.06.2026 laden">📊 TR Import</button>
+    <button class="btn btn-primary btn-sm" id="tr-import-btn" onclick="importTradeRepublic()" title="Trade Republic Vermögensübersicht 13.08.2026 laden">📊 TR Import</button>
     <button class="btn btn-sm" style="background:var(--red);color:#fff" id="recovery-btn" onclick="importRecovery()" title="Alle Daten wiederherstellen (Immobilien + Aktien + Edelmetalle)">🔄 Wiederherstellen</button>
     <button class="btn btn-sm" style="display:none;background:var(--orange,#f59e0b);color:#fff" id="undo-btn" onclick="undoImport()">↩ Rückgängig</button>
   </div>
@@ -1108,7 +1108,7 @@ function importData(input){
   input.value='';
 }
 async function importRecovery(){
-  if(!confirm('Alle Daten wiederherstellen?\n\n• 7 Immobilien\n• 23 Aktien (TR 21.06.2026)\n• 8 Edelmetalle\n• 2 Kredite\n• 1 Bausparvertrag\n\nVorhandene Daten werden vollständig überschrieben.'))return;
+  if(!confirm('Alle Daten wiederherstellen?\n\n• 7 Immobilien\n• 23 Aktien (TR 13.08.2026)\n• 8 Edelmetalle\n• 2 Kredite\n• 1 Bausparvertrag\n\nVorhandene Daten werden vollständig überschrieben.'))return;
   const btn=document.getElementById('recovery-btn');
   btn.textContent='⏳ Lädt...';btn.disabled=true;
   try{
@@ -1130,7 +1130,7 @@ async function importRecovery(){
   }
 }
 async function importTradeRepublic(){
-  if(!confirm('Trade Republic Depot (21.06.2026) laden?\n23 Positionen werden importiert.\n\nNur Aktien werden ersetzt — Immobilien, Edelmetalle usw. bleiben erhalten.'))return;
+  if(!confirm('Trade Republic Depot (13.08.2026) laden?\n23 Positionen werden importiert.\n\nNur Aktien werden ersetzt — Immobilien, Edelmetalle usw. bleiben erhalten.'))return;
   const btn=document.getElementById('tr-import-btn');
   btn.textContent='⏳ Lädt...';btn.disabled=true;
   try{
