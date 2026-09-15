@@ -293,9 +293,8 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <button class="btn btn-ghost btn-sm" onclick="addSnapshot()">📸 Snapshot speichern</button>
     <button class="btn btn-ghost btn-sm" onclick="openExportModal()">📤 Exportieren</button>
     <label class="btn btn-ghost btn-sm" style="cursor:pointer">📥 Importieren<input type="file" accept=".json" onchange="importData(this)" style="display:none"></label>
-    <button class="btn btn-ghost btn-sm" id="tr-import-btn" onclick="importTradeRepublic()" title="Festen Stand vom 13.08.2026 laden">📊 TR Import</button>
     <button class="btn btn-sm" style="background:var(--red);color:#fff" id="recovery-btn" onclick="importRecovery()" title="Alle Daten wiederherstellen (Immobilien + Aktien + Edelmetalle)">🔄 Wiederherstellen</button>
-    <button class="btn btn-sm" style="display:none;background:var(--orange,#f59e0b);color:#fff" id="undo-btn" onclick="undoImport()">↩ Rückgängig</button>
+    <button class="btn btn-sm" style="background:var(--orange,#f59e0b);color:#fff" id="backup-btn" onclick="openBackupsModal()">🛡 Sicherungen</button>
   </div>
   <div class="kpi-row" id="dash-kpis"></div>
   <div class="card" style="margin-bottom:14px">
@@ -538,6 +537,20 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
   </div>
 </div>
 
+<!-- SICHERUNGEN MODAL -->
+<div class="overlay" id="backup-overlay">
+  <div class="modal wide">
+    <button class="close-btn" onclick="closeBackupsModal()">&#x2715;</button>
+    <h3>Sicherungen</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Automatisch angelegt vor jedem Import und einmal täglich. Die letzten 15 Stände werden im Browser vorgehalten.</p>
+    <div id="bk-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="downloadAllBackups()">⬇ Alle als Datei sichern</button>
+      <button class="btn btn-primary" onclick="saveBackup('Manuell gesichert');openBackupsModal()">+ Jetzt sichern</button>
+    </div>
+  </div>
+</div>
+
 <!-- AKTIEN PDF MODAL -->
 <div class="overlay" id="aktien-pdf-overlay">
   <div class="modal wide">
@@ -752,6 +765,7 @@ function totalNet(){
 // ── SYNC / STORAGE ────────────────────────────────────────────────────────────
 async function save(){
   localStorage.setItem('finanz_v2',JSON.stringify(data));
+  autoDailyBackup();
   try{
     const r=await fetch(API_URL,{method:'POST',headers:{'X-API-Key':API_KEY,'Content-Type':'application/json'},body:JSON.stringify(data)});
     setSyncDot(r.ok);
@@ -1071,24 +1085,94 @@ function exportAll(){
   fns.forEach((fn,i)=>setTimeout(fn,i*200));
   setTimeout(()=>{btn.disabled=false;btn.textContent='⬇ Alles herunterladen';},fns.length*200+300);
 }
-function saveBackup(){
+// ── SICHERUNGEN (rollierende Historie im Browser) ────────────────────────────
+const BK_KEY='finanz_v2_history',BK_MAX=15;
+function loadBackups(){try{return JSON.parse(localStorage.getItem(BK_KEY))||[]}catch(e){return[]}}
+function storeBackups(list){
+  // Bei vollem localStorage die ältesten Einträge verwerfen bis es passt
+  while(list.length){
+    try{localStorage.setItem(BK_KEY,JSON.stringify(list));return true}
+    catch(e){list.pop()}
+  }
+  return false;
+}
+function saveBackup(label){
   try{
-    const backup={ts:new Date().toISOString(),data:JSON.parse(JSON.stringify(data))};
-    localStorage.setItem('finanz_v2_undo',JSON.stringify(backup));
-    const ub=document.getElementById('undo-btn');
-    if(ub){ub.style.display='';ub.textContent='↩ Rückgängig ('+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+')';}
+    const snap=JSON.stringify(data);
+    const list=loadBackups();
+    if(list.length&&list[0].json===snap)return;   // unverändert → keine Dublette
+    list.unshift({ts:new Date().toISOString(),label:label||'Automatisch',json:snap});
+    storeBackups(list.slice(0,BK_MAX));
+    updateBackupBtn();
   }catch(e){}
 }
-function undoImport(){
-  const raw=localStorage.getItem('finanz_v2_undo');
-  if(!raw){alert('Kein Backup vorhanden.');return;}
-  const backup=JSON.parse(raw);
-  if(!confirm('Daten vom '+new Date(backup.ts).toLocaleString('de-DE')+' wiederherstellen?'))return;
-  data=backup.data;
-  save();renderDashboard();updateSidebar();
-  localStorage.removeItem('finanz_v2_undo');
-  const ub=document.getElementById('undo-btn');if(ub)ub.style.display='none';
-  alert('✓ Rückgängig gemacht.');
+// Einmal pro Tag automatisch sichern
+function autoDailyBackup(){
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    if(localStorage.getItem('finanz_v2_lastauto')===today)return;
+    localStorage.setItem('finanz_v2_lastauto',today);
+    saveBackup('Tagessicherung');
+  }catch(e){}
+}
+function updateBackupBtn(){
+  const b=document.getElementById('backup-btn');if(!b)return;
+  const list=loadBackups();
+  b.textContent='🛡 Sicherungen'+(list.length?' ('+list.length+')':'');
+  b.title=list.length?'Letzte Sicherung: '+new Date(list[0].ts).toLocaleString('de-DE')+' — '+list[0].label
+                     :'Noch keine Sicherung vorhanden';
+}
+// Vermögen einer Sicherung mit der App-Logik berechnen
+function backupNet(d){
+  const cur=data;
+  try{data=d;return totalNet()}catch(e){return null}finally{data=cur}
+}
+function openBackupsModal(){
+  const list=loadBackups(),body=document.getElementById('bk-body');
+  if(!list.length){
+    body.innerHTML='<div class="info-bar">Noch keine Sicherungen vorhanden. Sicherungen werden automatisch vor jedem Import und einmal täglich angelegt.</div>';
+  }else{
+    body.innerHTML='<div class="tbl-wrap" style="max-height:400px;overflow-y:auto"><table><thead><tr><th>Zeitpunkt</th><th>Anlass</th><th style="text-align:right">Vermögen</th><th>Inhalt</th><th></th></tr></thead><tbody>'+
+      list.map((b,i)=>{
+        let d=null;try{d=JSON.parse(b.json)}catch(e){}
+        const n=c=>((d||{})[c]||[]).length;
+        const net=d?backupNet(d):null;
+        return `<tr><td style="white-space:nowrap">${new Date(b.ts).toLocaleString('de-DE')}</td>`+
+          `<td>${b.label}</td>`+
+          `<td class="mono" style="text-align:right">${net==null?'—':fmt(net)}</td>`+
+          `<td style="font-size:11px;color:var(--text-dim)">${n('immobilien')} Immo · ${n('aktien')} Aktien · ${n('edelmetalle')} EM · ${n('kredite')} Kredite · ${n('bauspar')} Bauspar</td>`+
+          `<td style="white-space:nowrap;text-align:right"><button class="btn btn-ghost btn-sm" onclick="downloadBackup(${i})" title="Als Datei herunterladen">⬇</button> <button class="btn btn-primary btn-sm" onclick="restoreBackup(${i})">Wiederherstellen</button></td></tr>`;
+      }).join('')+'</tbody></table></div>';
+  }
+  document.getElementById('backup-overlay').classList.add('open');
+}
+function closeBackupsModal(){document.getElementById('backup-overlay').classList.remove('open')}
+function restoreBackup(i){
+  const b=loadBackups()[i];if(!b)return;
+  if(!confirm('Sicherung vom '+new Date(b.ts).toLocaleString('de-DE')+' ('+b.label+') wiederherstellen?\n\nDer aktuelle Stand wird vorher gesichert.'))return;
+  saveBackup('Vor Wiederherstellung');
+  data=JSON.parse(b.json);
+  data.immobilien=(data.immobilien||[]).map(x=>({hypotheken:[],mieteinnahmen:[],...x}));
+  data.snapshots=data.snapshots||[];
+  data.edelmetalle=migrateEdel(data.edelmetalle||[]);
+  save();renderDashboard();updateSidebar();closeBackupsModal();
+  setTimeout(()=>alert('✓ Sicherung wiederhergestellt.'),100);
+}
+function downloadBackup(i){
+  const b=loadBackups()[i];if(!b)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([b.json],{type:'application/json'}));
+  a.download='finanzuebersicht-'+b.ts.slice(0,19).replace(/[:T]/g,'-')+'.json';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+}
+function downloadAllBackups(){
+  const list=loadBackups();
+  if(!list.length){alert('Noch keine Sicherungen vorhanden.');return}
+  const bundle={exportiert:new Date().toISOString(),aktuell:data,sicherungen:list.map(b=>({ts:b.ts,label:b.label,data:JSON.parse(b.json)}))};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(bundle,null,1)],{type:'application/json'}));
+  a.download='finanzuebersicht-alle-sicherungen-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
 }
 function importData(input){
   const file=input.files[0];if(!file)return;
@@ -1098,7 +1182,7 @@ function importData(input){
       const imported=JSON.parse(e.target.result);
       if(!imported||typeof imported!=='object'){alert('Ungültige Datei.');return}
       if(!confirm('Alle aktuellen Daten werden überschrieben. Fortfahren?'))return;
-      saveBackup();
+      saveBackup('Vor JSON-Import');
       data=imported;
       data.immobilien=(data.immobilien||[]).map(x=>({hypotheken:[],mieteinnahmen:[],...x}));
       data.snapshots=data.snapshots||[];
@@ -1111,14 +1195,14 @@ function importData(input){
   input.value='';
 }
 async function importRecovery(){
-  if(!confirm('Alle Daten wiederherstellen?\n\n• 7 Immobilien\n• 23 Aktien (TR 13.08.2026)\n• 8 Edelmetalle\n• 2 Kredite\n• 1 Bausparvertrag\n\nVorhandene Daten werden vollständig überschrieben.'))return;
+  if(!confirm('Alle Daten wiederherstellen?\n\n• 7 Immobilien (inkl. Hypotheken)\n• 23 Aktien & Krypto (Stand 15.09.2026)\n• 8 Edelmetalle\n• 2 Kredite\n• 1 Bausparvertrag\n\nVorhandene Daten werden vollständig überschrieben.\nVorher wird automatisch ein Backup angelegt (↩ Rückgängig).'))return;
   const btn=document.getElementById('recovery-btn');
   btn.textContent='⏳ Lädt...';btn.disabled=true;
   try{
     const r=await fetch('https://ttbb-maker.github.io/finanz-recovery.json');
     if(!r.ok)throw new Error('HTTP '+r.status);
     const imported=await r.json();
-    saveBackup();
+    saveBackup('Vor Wiederherstellung');
     data=imported;
     data.immobilien=(data.immobilien||[]).map(x=>({hypotheken:[],mieteinnahmen:[],...x}));
     data.snapshots=data.snapshots||[];
@@ -1130,25 +1214,6 @@ async function importRecovery(){
   }catch(e){
     alert('Fehler: '+e.message);
     btn.textContent='🔄 Wiederherstellen';btn.disabled=false;
-  }
-}
-async function importTradeRepublic(){
-  if(!confirm('Trade Republic Depot (13.08.2026) laden?\n23 Positionen werden importiert.\n\nNur Aktien werden ersetzt — Immobilien, Edelmetalle usw. bleiben erhalten.'))return;
-  const btn=document.getElementById('tr-import-btn');
-  btn.textContent='⏳ Lädt...';btn.disabled=true;
-  try{
-    const r=await fetch('https://ttbb-maker.github.io/tr-import.json');
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const imported=await r.json();
-    saveBackup();
-    data.aktien=imported.aktien||[];
-    await save();
-    renderDashboard();updateSidebar();
-    btn.textContent='✓ Importiert';
-    setTimeout(()=>{btn.textContent='📊 TR Import';btn.disabled=false;},3000);
-  }catch(e){
-    alert('Fehler: '+e.message);
-    btn.textContent='📊 TR Import';btn.disabled=false;
   }
 }
 function addSnapshot(){
@@ -1731,7 +1796,7 @@ async function handleAktienPdf(file){
 })();
 function saveAktienPdf(){
   if(!aktienPdfParsed.length)return;
-  saveBackup(); // Sicherung vor dem Überschreiben → ↩ Rückgängig
+  saveBackup('Vor PDF-Depotimport');
   let added=0,updated=0;
   aktienPdfParsed.forEach(p=>{
     const ex=p._id?data.aktien.find(a=>a.id===p._id):null;
@@ -1942,11 +2007,12 @@ function saveEntry(){
 }
 
 // close overlays on backdrop click
-['modal-overlay','hyp-overlay','rent-overlay','csv-overlay','metal-overlay','pdf-overlay','aktien-pdf-overlay','tr-overlay','export-overlay'].forEach(id=>{
+['modal-overlay','hyp-overlay','rent-overlay','csv-overlay','metal-overlay','pdf-overlay','aktien-pdf-overlay','tr-overlay','export-overlay','backup-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')});
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+updateBackupBtn();
 loadFromRemote();
 </script>
 </body>
