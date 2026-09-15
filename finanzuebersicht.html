@@ -8,6 +8,7 @@
 <title>Finanzübersicht</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0B0D11;--surface:#111318;--surface2:#181B22;--border:#252830;--gold:#C9A84C;--gold-dim:#8B6F2E;--gold-light:#E8D090;--text:#E8E2D6;--text-dim:#7A7870;--text-mid:#A8A49C;--green:#4CAF7D;--red:#E05C5C;--blue:#5C8BE0;--purple:#8B5CE0}
@@ -288,10 +289,11 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
 <div class="page active" id="page-dashboard">
   <div class="header-row">
     <div><h2>Dashboard</h2><p class="subtitle" style="margin-bottom:0">Portfolio Übersicht</p></div>
+    <button class="btn btn-primary btn-sm" onclick="openAktienPdfModal()" title="Trade Republic Vermögensübersicht hochladen — Depot aktualisieren">📄 Depot per PDF aktualisieren</button>
     <button class="btn btn-ghost btn-sm" onclick="addSnapshot()">📸 Snapshot speichern</button>
     <button class="btn btn-ghost btn-sm" onclick="openExportModal()">📤 Exportieren</button>
     <label class="btn btn-ghost btn-sm" style="cursor:pointer">📥 Importieren<input type="file" accept=".json" onchange="importData(this)" style="display:none"></label>
-    <button class="btn btn-primary btn-sm" id="tr-import-btn" onclick="importTradeRepublic()" title="Trade Republic Vermögensübersicht 13.08.2026 laden">📊 TR Import</button>
+    <button class="btn btn-ghost btn-sm" id="tr-import-btn" onclick="importTradeRepublic()" title="Festen Stand vom 13.08.2026 laden">📊 TR Import</button>
     <button class="btn btn-sm" style="background:var(--red);color:#fff" id="recovery-btn" onclick="importRecovery()" title="Alle Daten wiederherstellen (Immobilien + Aktien + Edelmetalle)">🔄 Wiederherstellen</button>
     <button class="btn btn-sm" style="display:none;background:var(--orange,#f59e0b);color:#fff" id="undo-btn" onclick="undoImport()">↩ Rückgängig</button>
   </div>
@@ -387,7 +389,7 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
     <div class="btn-group">
       <button class="btn btn-ghost btn-sm" id="live-btn" onclick="updateLivePrices()">⟳ Live-Kurse</button>
       <button class="btn btn-ghost btn-sm" onclick="openTRModal()">🟢 Trade Republic</button>
-      <button class="btn btn-ghost btn-sm" onclick="openAktienPdfModal()">📄 Depot importieren</button>
+      <button class="btn btn-primary btn-sm" onclick="openAktienPdfModal()" title="Trade Republic Vermögensübersicht hochladen">📄 Depot per PDF aktualisieren</button>
       <button class="btn btn-ghost btn-sm" onclick="openCSVModal()">📋 CSV Import</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('aktien')">+ Hinzufügen</button>
     </div>
@@ -540,26 +542,27 @@ td.pos{color:var(--green)}td.neg{color:var(--red)}td.name{color:var(--text);font
 <div class="overlay" id="aktien-pdf-overlay">
   <div class="modal wide">
     <button class="close-btn" onclick="closeAktienPdfModal()">&#x2715;</button>
-    <h3>Depotauszug importieren</h3>
-    <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Depotauszug, Kontouübersicht oder Broker-Statement hochladen — Claude liest alle Positionen automatisch heraus.</p>
+    <h3>Depot per PDF aktualisieren</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Trade Republic Vermögensübersicht hochladen — Stückzahlen und Kurse werden automatisch übernommen. <strong>Deine Kaufkurse bleiben erhalten.</strong></p>
     <div id="ap-dropzone" onclick="document.getElementById('ap-file-input').click()"
       style="border:1px dashed var(--border);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:14px">
       <div style="font-size:28px;margin-bottom:8px">📊</div>
-      <div style="font-size:13px;color:var(--text-mid)">PDF oder Scan hier ablegen oder klicken</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Depotauszug &middot; Broker-Statement &middot; Portfolio-Übersicht</div>
-      <input type="file" id="ap-file-input" accept=".pdf,image/*" style="display:none" onchange="handleAktienPdf(this.files[0])">
+      <div style="font-size:13px;color:var(--text-mid)">PDF hier ablegen oder klicken zum Auswählen</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Trade Republic Vermögensübersicht &middot; Depotauszug</div>
+      <input type="file" id="ap-file-input" accept=".pdf" style="display:none" onchange="handleAktienPdf(this.files[0])">
     </div>
     <div id="ap-status" style="display:none">
       <div id="ap-status-text" class="info-bar" style="margin-bottom:14px"></div>
       <div id="ap-result" style="display:none">
+        <div id="ap-summary" class="info-bar" style="margin-bottom:12px;font-size:12px"></div>
         <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px">Erkannte Positionen — bitte prüfen</div>
-        <div class="tbl-wrap" style="margin-bottom:12px">
+        <div class="tbl-wrap" style="margin-bottom:12px;max-height:340px;overflow-y:auto">
           <table>
-            <thead><tr><th>Ticker</th><th>Name</th><th>Anteile</th><th>Kaufkurs (€)</th><th>Akt. Kurs (€)</th><th>Aktion</th></tr></thead>
+            <thead><tr><th>Position</th><th style="text-align:right">Anteile</th><th style="text-align:right">Kurs (€)</th><th style="text-align:right">Wert (€)</th><th>Status</th></tr></thead>
             <tbody id="ap-preview-tbody"></tbody>
           </table>
         </div>
-        <div class="info-bar" style="font-size:11px">Bestehende Ticker werden aktualisiert. Neue Positionen werden hinzugefügt.</div>
+        <div class="info-bar" style="font-size:11px">Vorhandene Positionen werden über ISIN/Ticker erkannt — nur Stückzahl und Kurs werden aktualisiert, der Kaufkurs bleibt unverändert. Positionen die nicht im PDF stehen, bleiben unangetastet. Vor dem Übernehmen wird automatisch ein Backup angelegt (↩ Rückgängig).</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1559,56 +1562,195 @@ function savePdfHyp(){
   save();closePdfImportModal();renderImmobilien();renderHypList();updateSidebar();
 }
 
-// ── AKTIEN PDF IMPORT (via Synology AI-Proxy) ─────────────────────────────────
+// ── DEPOT-PDF IMPORT (lokal im Browser — kein API-Key nötig) ─────────────────
+// ISIN → [Yahoo-Ticker, Anzeigename]. Unbekannte ISINs kommen ohne Ticker rein.
+const ISIN_MAP={
+  'DE000PAG9113':['P911.DE','Dr. Ing. h.c. F. Porsche AG'],
+  'US56035L1044':['MAIN','Main Street Capital Corp.'],
+  'DE000BASF111':['BASF.DE','BASF SE'],
+  'US6701002056':['NVO','Novo-Nordisk AS (ADR)'],
+  'US4581401001':['INTC','Intel Corp.'],
+  'DE0008404005':['ALV.DE','Allianz SE'],
+  'US4330001060':['HIMS','Hims & Hers Health Inc.'],
+  'DE0006069008':['NLM.DE','FRoSTA AG'],
+  'DE0007037129':['RWE.DE','RWE AG'],
+  'US3682872078':['OGZPY','Gazprom PJSC (ADR) – eingefroren'],
+  'DE000A0F5UH1':['EXX5.DE','STOXX Global Dividend 100 EUR (Dist)'],
+  'KYG9830T1067':['XIACY','Xiaomi Corp.'],
+  'IE00B0M63177':['IDEM.DE','iShares MSCI EM USD (Dist)'],
+  'US92343V1044':['VZ','Verizon Communications Inc.'],
+  'IE00B8GKDB10':['VHYL.DE','Vanguard FTSE All-World High Div. USD (Dist)'],
+  'US7134481081':['PEP','PepsiCo Inc.'],
+  'US0378331005':['AAPL','Apple Inc.'],
+  'IE000BI8OT95':['IWDA.DE','iShares Core MSCI World USD (Acc)'],
+  'IE00B4L5Y983':['IWDA.DE','iShares Core MSCI World USD (Acc)'],
+  'US9311421039':['WMT','Walmart Inc.'],
+  'GB0002875804':['BATS.DE','British American Tobacco PLC'],
+  'CA3012831077':['EIF.TO','Exchange Income Corp.']
+};
+const CRYPTO_MAP={
+  'BTC':['BTC-EUR','Bitcoin (BTC)'],'ETH':['ETH-EUR','Ethereum (ETH)'],
+  'SOL':['SOL-EUR','Solana (SOL)'],'XRP':['XRP-EUR','XRP'],
+  'ADA':['ADA-EUR','Cardano (ADA)'],'DOGE':['DOGE-EUR','Dogecoin (DOGE)'],
+  'LTC':['LTC-EUR','Litecoin (LTC)'],'DOT':['DOT-EUR','Polkadot (DOT)'],
+  'AVAX':['AVAX-EUR','Avalanche (AVAX)'],'LINK':['LINK-EUR','Chainlink (LINK)']
+};
+// Deutsche Zahl "1.234,56" → 1234.56
+function deNum(s){return parseFloat(String(s).replace(/\./g,'').replace(',','.'))}
+// PDF → Textzeilen (nach Y-Position gruppiert, Kopf-/Fußzeilen gefiltert)
+const PDF_NOISE=/www\.traderepublic\.com|Sitz der Gesellschaft|Umsatzsteuer-ID|Geschäftsführer|HRB \d|Brunnenstra|^Seite \d+ von \d+$|Erstellt am .*Seite|TRADE REPUBLIC BANK GMBH|^Andreas Torner$|^Gernot Mittendorfer$|^Christian Hecker$|^Thomas Pischke$/i;
+async function pdfToLines(file){
+  if(typeof pdfjsLib==='undefined')throw new Error('PDF-Bibliothek nicht geladen — bitte Seite neu laden.');
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  const lines=[];
+  for(let p=1;p<=doc.numPages;p++){
+    const tc=await (await doc.getPage(p)).getTextContent();
+    const rows={};
+    tc.items.forEach(it=>{
+      const y=Math.round(it.transform[5]);
+      (rows[y]=rows[y]||[]).push({x:it.transform[4],s:it.str});
+    });
+    Object.keys(rows).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const txt=rows[y].sort((a,b)=>a.x-b.x).map(o=>o.s).join(' ').replace(/\s+/g,' ').trim();
+      if(txt&&!PDF_NOISE.test(txt))lines.push(txt);
+    });
+  }
+  return lines;
+}
+// Depotauszug parsen: jede Position beginnt mit "<Stück> Stk."
+function parseDepotPdf(lines){
+  const full=lines.join('\n');
+  const NUM=/\d{1,3}(?:\.\d{3})*,\d{2,}/g;
+  const startRe=/(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*Stk\./g;
+  const marks=[];let m;
+  while((m=startRe.exec(full))!==null)marks.push({shares:deNum(m[1]),at:m.index,from:startRe.lastIndex});
+  const out=[];
+  marks.forEach((mk,i)=>{
+    let block=full.slice(mk.from,i+1<marks.length?marks[i+1].at:full.length);
+    const cut=block.search(/ANZAHL POSITIONEN|^GESAMT/m);
+    if(cut>-1)block=block.slice(0,cut);
+    const isin=(block.match(/ISIN:\s*([A-Z]{2}[A-Z0-9]{9}\d)/)||[])[1]||'';
+    // Kurs & Kurswert: deutsche Dezimalzahlen ohne ISIN- und Datums-Treffer
+    const nums=(block.replace(/ISIN:\s*[A-Z0-9]+/g,' ').replace(/\d{2}\.\d{2}\.\d{4}/g,' ').match(NUM)||[]).map(deNum);
+    if(nums.length<2)return;
+    const price=nums[0],value=nums[nums.length-1];
+    let ticker='',mapped='';
+    if(isin&&ISIN_MAP[isin]){ticker=ISIN_MAP[isin][0];mapped=ISIN_MAP[isin][1]}
+    else{
+      // Crypto: Symbol steht auf eigener Zeile, ggf. gefolgt vom Kursdatum
+      const sym=(block.match(new RegExp('(?:^|\\n)\\s*('+Object.keys(CRYPTO_MAP).join('|')+')\\b'))||[])[1];
+      if(sym){ticker=CRYPTO_MAP[sym][0];mapped=CRYPTO_MAP[sym][1]}
+    }
+    let name=mapped;
+    if(!name){
+      name=(block.split('\n').find(l=>l.trim())||'').trim()
+        .replace(/\s*(ISIN:|Registered Shares|Inhaber-|Namens-|vink\.|Indeh\.|Regist\.|Nam\.Akt).*$/,'')
+        .replace(/\s+\d{1,3}(?:\.\d{3})*,\d{2,}.*$/,'').trim();
+    }
+    if(!name)name=ticker||isin||'Unbekannte Position';
+    out.push({isin,ticker,name,shares:mk.shares,price,value});
+  });
+  return out;
+}
 let aktienPdfParsed=[];
+const AP_DROPZONE_HTML='<div style="font-size:28px;margin-bottom:8px">📊</div>'+
+  '<div style="font-size:13px;color:var(--text-mid)">PDF hier ablegen oder klicken zum Auswählen</div>'+
+  '<div style="font-size:11px;color:var(--text-dim);margin-top:4px">Trade Republic Vermögensübersicht &middot; Depotauszug</div>'+
+  '<input type="file" id="ap-file-input" accept=".pdf" style="display:none" onchange="handleAktienPdf(this.files[0])">';
 function openAktienPdfModal(){
   aktienPdfParsed=[];
   document.getElementById('ap-status').style.display='none';
   document.getElementById('ap-result').style.display='none';
   document.getElementById('ap-save-btn').style.display='none';
-  document.getElementById('ap-file-input').value='';
-  document.getElementById('ap-dropzone').style.borderColor='var(--border)';
+  const dz=document.getElementById('ap-dropzone');
+  dz.innerHTML=AP_DROPZONE_HTML;           // Zustand vom letzten Import zurücksetzen
+  dz.style.borderColor='var(--border)';
   document.getElementById('aktien-pdf-overlay').classList.add('open');
 }
 function closeAktienPdfModal(){document.getElementById('aktien-pdf-overlay').classList.remove('open')}
+// Bestehende Position finden: erst ISIN, dann Ticker, dann Name
+function findAktie(p){
+  if(p.isin){const byIsin=data.aktien.find(a=>a.isin&&a.isin===p.isin);if(byIsin)return byIsin}
+  if(p.ticker){const byT=data.aktien.find(a=>(a.ticker||'').toUpperCase()===p.ticker.toUpperCase());if(byT)return byT}
+  const norm=s=>(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const n=norm(p.name);
+  if(n.length<4)return null;
+  return data.aktien.find(a=>{const an=norm(a.name);return an&&(an===n||an.startsWith(n.slice(0,12))||n.startsWith(an.slice(0,12)))})||null;
+}
 async function handleAktienPdf(file){
   if(!file)return;
   const dz=document.getElementById('ap-dropzone');
   dz.style.borderColor='var(--gold-dim)';
-  dz.innerHTML='<div style="font-size:24px;margin-bottom:8px">⏳</div><div style="font-size:13px;color:var(--text-mid)">'+file.name+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">Claude analysiert das Dokument…</div>';
+  dz.innerHTML='<div style="font-size:24px;margin-bottom:8px">⏳</div><div style="font-size:13px;color:var(--text-mid)">'+file.name+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">PDF wird gelesen…</div>';
   const statusEl=document.getElementById('ap-status'),statusText=document.getElementById('ap-status-text');
-  statusEl.style.display='block';statusText.textContent='Depotauszug wird gelesen…';statusText.style.color='var(--blue)';
+  statusEl.style.display='block';statusText.textContent='PDF wird lokal im Browser gelesen…';statusText.style.color='var(--blue)';
   try{
-    const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
-    const isImage=file.type.startsWith('image/'),mediaType=isImage?file.type:'application/pdf';
-    const result=await callClaude({
-      model:'claude-sonnet-4-6',max_tokens:2000,
-      system:`Du analysierst Depotauszüge. Extrahiere ALLE Wertpapierpositionen. Antworte NUR mit JSON-Array:\n[{"ticker":"AAPL","name":"Apple Inc.","shares":10.5,"buyPrice":145.00,"currentPrice":182.50}]\nRegeln: ticker=Börsenkürzel, shares=Anteile, buyPrice/currentPrice in EUR, deutsche Aktien mit .DE Suffix, fehlende Werte als null`,
-      messages:[{role:'user',content:[{type:isImage?'image':'document',source:{type:'base64',media_type:mediaType,data:base64}},{type:'text',text:'Bitte extrahiere alle Wertpapierpositionen aus diesem Depotauszug.'}]}]
-    });
-    const raw=result?.content?.map(c=>c.text||'').join('').trim();
-    aktienPdfParsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    if(!Array.isArray(aktienPdfParsed)||!aktienPdfParsed.length)throw new Error('Keine Positionen gefunden');
-    document.getElementById('ap-preview-tbody').innerHTML=aktienPdfParsed.map((x,i)=>`<tr><td><span class="badge badge-blue">${x.ticker||'?'}</span></td><td style="color:var(--text)">${x.name||'—'}</td><td class="mono">${x.shares!=null?fmtN(x.shares,4):'—'}</td><td><input type="number" step="0.01" value="${x.buyPrice||''}" placeholder="—" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;font-family:'DM Mono',monospace" onchange="aktienPdfParsed[${i}].buyPrice=parseFloat(this.value)||null"></td><td><input type="number" step="0.01" value="${x.currentPrice||''}" placeholder="—" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;font-family:'DM Mono',monospace" onchange="aktienPdfParsed[${i}].currentPrice=parseFloat(this.value)||null"></td><td><button class="btn-icon del" onclick="aktienPdfParsed.splice(${i},1);document.getElementById('ap-preview-tbody').querySelectorAll('tr')[${i}].remove()">✕</button></td></tr>`).join('');
-    document.getElementById('ap-result').style.display='block';document.getElementById('ap-save-btn').style.display='inline-flex';
-    statusText.textContent='✓ '+aktienPdfParsed.length+' Positionen erkannt — bitte prüfen!';statusText.style.color='var(--green)';
-    dz.innerHTML='<div style="font-size:22px;margin-bottom:6px">✓</div><div style="font-size:13px;color:var(--green)">'+file.name+'</div>';
+    if(!/\.pdf$/i.test(file.name)&&file.type!=='application/pdf')throw new Error('Bitte die PDF-Datei von Trade Republic hochladen (keine Bilder/Scans).');
+    const lines=await pdfToLines(file);
+    aktienPdfParsed=parseDepotPdf(lines);
+    if(!aktienPdfParsed.length)throw new Error('Keine Positionen erkannt. Ist das eine Trade Republic Vermögensübersicht?');
+    const dm=lines.join(' ').match(/zum (\d{2}\.\d{2}\.\d{4})/);
+    const stichtag=dm?dm[1]:'';
+    let neu=0,upd=0,depotWert=0;
+    const rows=aktienPdfParsed.map(p=>{
+      const ex=findAktie(p);p._id=ex?ex.id:null;
+      depotWert+=p.value;
+      let status,shareCell=fmtN(p.shares,6),priceCell=fmtN(p.price,2);
+      if(!ex){neu++;status='<span class="badge badge-blue">neu</span>'}
+      else{
+        upd++;
+        const dS=p.shares-(ex.shares||0),dP=p.price-(ex.price||0);
+        if(Math.abs(dS)>1e-6)shareCell=`<span style="color:var(--text-dim)">${fmtN(ex.shares||0,6)}</span> → <strong>${fmtN(p.shares,6)}</strong>`;
+        if(Math.abs(dP)>0.005)priceCell=`<span style="color:var(--text-dim)">${fmtN(ex.price||0,2)}</span> → <strong>${fmtN(p.price,2)}</strong>`;
+        status=(Math.abs(dS)>1e-6||Math.abs(dP)>0.005)?'<span class="badge badge-green">aktualisiert</span>':'<span class="badge">unverändert</span>';
+      }
+      return `<tr><td style="color:var(--text)">${p.name}${p.ticker?` <span class="badge badge-blue">${p.ticker}</span>`:''}${p.isin?`<div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace">${p.isin}</div>`:''}</td><td class="mono" style="text-align:right">${shareCell}</td><td class="mono" style="text-align:right">${priceCell}</td><td class="mono" style="text-align:right">${fmtN(p.value,2)}</td><td>${status}</td></tr>`;
+    }).join('');
+    document.getElementById('ap-preview-tbody').innerHTML=rows;
+    const fehlend=data.aktien.filter(a=>!aktienPdfParsed.some(p=>p._id===a.id)).length;
+    document.getElementById('ap-summary').innerHTML=
+      `<strong>${aktienPdfParsed.length} Positionen</strong> erkannt${stichtag?` &middot; Stichtag ${stichtag}`:''} &middot; Depotwert <strong>${fmtN(depotWert,2)} €</strong><br>`+
+      `${upd} werden aktualisiert, ${neu} neu hinzugefügt`+(fehlend?` &middot; ${fehlend} vorhandene Position(en) nicht im PDF — bleiben unverändert`:'');
+    document.getElementById('ap-result').style.display='block';
+    document.getElementById('ap-save-btn').style.display='inline-flex';
+    statusText.textContent='✓ PDF erfolgreich gelesen — bitte prüfen und übernehmen.';statusText.style.color='var(--green)';
+    dz.innerHTML='<div style="font-size:22px;margin-bottom:6px">✓</div><div style="font-size:13px;color:var(--green)">'+file.name+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">Andere Datei wählen</div>';
   }catch(e){
     statusText.textContent='Fehler: '+e.message;statusText.style.color='var(--red)';
+    document.getElementById('ap-result').style.display='none';
+    document.getElementById('ap-save-btn').style.display='none';
     dz.innerHTML='<div style="font-size:24px;margin-bottom:8px">📊</div><div style="font-size:13px;color:var(--text-mid)">Erneut versuchen</div>';
-    dz.onclick=()=>document.getElementById('ap-file-input').click();
   }
 }
+(function(){
+  const dz=document.getElementById('ap-dropzone');if(!dz)return;
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--gold)'});
+  dz.addEventListener('dragleave',()=>{dz.style.borderColor='var(--border)'});
+  dz.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleAktienPdf(f)});
+})();
 function saveAktienPdf(){
+  if(!aktienPdfParsed.length)return;
+  saveBackup(); // Sicherung vor dem Überschreiben → ↩ Rückgängig
   let added=0,updated=0;
-  aktienPdfParsed.forEach(x=>{
-    if(!x.ticker)return;
-    const ticker=x.ticker.toUpperCase(),existing=data.aktien.find(a=>a.ticker===ticker);
-    const item={id:existing?.id||uid(),ticker,name:x.name||ticker,shares:x.shares||0,buy:x.buyPrice||x.currentPrice||0,price:x.currentPrice||x.buyPrice||0};
-    if(existing){Object.assign(existing,item);updated++}else{data.aktien.push(item);added++}
+  aktienPdfParsed.forEach(p=>{
+    const ex=p._id?data.aktien.find(a=>a.id===p._id):null;
+    if(ex){
+      // Kaufkurs NIE überschreiben — nur Stückzahl, Kurs und Stammdaten
+      ex.shares=p.shares;
+      ex.price=p.price;
+      if(p.isin)ex.isin=p.isin;
+      if(p.ticker&&!ex.ticker)ex.ticker=p.ticker;
+      if(!ex.name)ex.name=p.name;
+      if(!ex.buy)ex.buy=p.price;
+      updated++;
+    }else{
+      data.aktien.push({id:uid(),ticker:p.ticker||'',isin:p.isin||'',name:p.name,shares:p.shares,buy:p.price,price:p.price});
+      added++;
+    }
   });
-  save();closeAktienPdfModal();renderAktien();updateSidebar();
-  if(added||updated)setTimeout(()=>alert('✓ '+added+' neu hinzugefügt, '+updated+' aktualisiert.'),100);
+  save();closeAktienPdfModal();renderAktien();renderDashboard();updateSidebar();
+  setTimeout(()=>alert('✓ Depot aktualisiert.\n\n'+updated+' Position(en) aktualisiert, '+added+' neu hinzugefügt.\nKaufkurse wurden beibehalten.\n\nMit ↩ Rückgängig im Dashboard kannst du das zurücknehmen.'),100);
 }
 
 // ── TRADE REPUBLIC IMPORT ─────────────────────────────────────────────────────
